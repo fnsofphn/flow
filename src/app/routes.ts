@@ -1,4 +1,4 @@
-﻿import { lazy, type LazyExoticComponent, type ComponentType } from 'react';
+import { lazy, type LazyExoticComponent, type ComponentType } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
   CalendarHeart,
@@ -73,7 +73,7 @@ export const appRoutes: AppRoute[] = [
   },
   {
     path: '/emotional-memory',
-    label: 'Hộp tâm tư',
+    label: 'Hộp tâm thư',
     icon: Heart,
     nav: true,
     component: lazy(() => import('@/pages/EmotionalMemory')),

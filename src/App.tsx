@@ -1,4 +1,4 @@
-﻿import { Fragment, Suspense } from 'react';
+import { Fragment, Suspense } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import { appRoutes } from './app/routes';
@@ -12,7 +12,7 @@ export default function App() {
           fallback={
             <div className="flex min-h-[60vh] items-center justify-center">
               <div className="glass-card px-6 py-4 text-sm font-medium text-white/70">
-                Đang tải giao diện...
+                Dang tai giao dien...
               </div>
             </div>
           }

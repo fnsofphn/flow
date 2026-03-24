@@ -1,4 +1,4 @@
-﻿import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Compass } from 'lucide-react';
 
@@ -15,14 +15,16 @@ export default function NotFound() {
         </div>
         <div className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-[0.3em] text-white/40">404</p>
-          <h1 className="text-3xl font-bold text-white">Không tìm thấy trang</h1>
-          <p className="text-white/60">Đường dẫn này không còn hợp lệ hoặc chưa được cấu hình trong ứng dụng.</p>
+          <h1 className="text-3xl font-bold text-white">Trang khong ton tai</h1>
+          <p className="text-white/60">
+            Duong dan nay khong con hop le hoac chua duoc cau hinh trong ung dung.
+          </p>
         </div>
         <Link
           to="/"
           className="inline-flex items-center rounded-xl bg-white/10 px-5 py-3 font-medium text-white transition-colors hover:bg-white/20"
         >
-          Quay về trang tổng quan
+          Quay ve dashboard
         </Link>
       </motion.div>
     </div>

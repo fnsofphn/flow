@@ -1,125 +1,208 @@
-import React from 'react';
+import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Wallet, TrendingUp, Heart, CheckCircle2, Image as ImageIcon } from 'lucide-react';
+import {
+  CalendarHeart,
+  CheckCircle2,
+  Heart,
+  Image as ImageIcon,
+  Mail,
+  Wallet,
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import TiltCard from '../components/TiltCard';
 
+const quickDestinations = [
+  {
+    title: 'Album kỷ niệm',
+    description: 'Mở ngay thư viện ảnh và các khoảnh khắc đã lưu.',
+    icon: ImageIcon,
+    path: '/memories',
+    accent: 'from-orange-500/20 to-pink-500/20',
+  },
+  {
+    title: 'Việc cần làm',
+    description: 'Đi tới danh sách to-do để theo dõi và xử lý nhanh.',
+    icon: CheckCircle2,
+    path: '/todo',
+    accent: 'from-sky-500/20 to-cyan-500/20',
+  },
+  {
+    title: 'Tài chính chung',
+    description: 'Quản lý đóng quỹ, trừ quỹ và dòng tiền trong một nơi.',
+    icon: Wallet,
+    path: '/finance',
+    accent: 'from-emerald-500/20 to-lime-500/20',
+  },
+  {
+    title: 'Kế hoạch hẹn hò',
+    description: 'Xem lịch hẹn và các hoạt động đã lên kế hoạch.',
+    icon: CalendarHeart,
+    path: '/date-planner',
+    accent: 'from-rose-500/20 to-fuchsia-500/20',
+  },
+];
+
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const [quickLetter, setQuickLetter] = useState('');
+  const [quickEmotion, setQuickEmotion] = useState('Yêu thương');
+  const [unlockDays, setUnlockDays] = useState(3);
+
+  const handleQuickLetter = () => {
+    navigate('/emotional-memory', {
+      state: {
+        compose: true,
+        draft: {
+          content: quickLetter,
+          emotion: quickEmotion,
+          unlockDays,
+        },
+      },
+    });
+  };
+
   return (
     <div className="space-y-8 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">
-            Chào buổi sáng, <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-pink-500">Nam & Cy</span>
+          <h1 className="mb-2 text-4xl font-bold tracking-tight">
+            Bảng điều khiển của{' '}
+            <span className="bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">
+              NamCy
+            </span>
           </h1>
-          <p className="text-white/60 text-lg">Hôm nay là một ngày tuyệt vời để tạo thêm kỷ niệm.</p>
+          <p className="text-lg text-white/60">
+            Chạm đúng nơi bạn cần: kỷ niệm, việc cần làm, tài chính và hộp tâm thư.
+          </p>
         </motion.div>
-        
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.8 }} 
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-full backdrop-blur-md border border-white/10"
+          className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/10 px-4 py-2 backdrop-blur-md"
         >
-          <Heart className="w-5 h-5 text-pink-500 fill-pink-500 animate-pulse" />
-          <span className="font-medium">Mood: Hạnh phúc</span>
+          <Heart className="h-5 w-5 animate-pulse fill-pink-500 text-pink-500" />
+          <span className="font-medium text-white/90">Hôm nay ưu tiên lưu lại điều tốt đẹp</span>
         </motion.div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Finance Overview */}
-        <TiltCard className="col-span-1 md:col-span-2">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-white/90 flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-orange-400" />
-                Tổng Quỹ Chung
-              </h2>
-              <p className="text-4xl font-bold mt-2 tracking-tight">24,500,000 <span className="text-xl text-white/50 font-normal">VND</span></p>
-            </div>
-            <div className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium border border-green-500/30">
-              +12% tháng này
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4 mt-8">
-            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-              <p className="text-sm text-white/50 mb-1">Đã chi</p>
-              <p className="text-xl font-semibold text-red-400">-4,200,000đ</p>
-            </div>
-            <div className="bg-white/5 rounded-xl p-4 border border-white/5">
-              <p className="text-sm text-white/50 mb-1">Mục tiêu (Đà Lạt)</p>
-              <p className="text-xl font-semibold text-blue-400">65% hoàn thành</p>
-            </div>
-          </div>
-        </TiltCard>
-
-        {/* Quick Actions */}
-        <TiltCard glow={false} className="col-span-1 bg-gradient-to-br from-orange-500/20 to-pink-500/20">
-          <h2 className="text-xl font-semibold text-white/90 mb-6">Hành động nhanh</h2>
-          <div className="space-y-3">
-            <button className="w-full flex items-center justify-between bg-white/10 hover:bg-white/20 transition-colors p-4 rounded-xl border border-white/10 group">
-              <span className="font-medium">Ghi chép chi tiêu</span>
-              <Wallet className="w-5 h-5 text-white/50 group-hover:text-white transition-colors" />
-            </button>
-            <button className="w-full flex items-center justify-between bg-white/10 hover:bg-white/20 transition-colors p-4 rounded-xl border border-white/10 group">
-              <span className="font-medium">Lên lịch hẹn hò</span>
-              <Heart className="w-5 h-5 text-white/50 group-hover:text-pink-400 transition-colors" />
-            </button>
-            <button className="w-full flex items-center justify-between bg-white/10 hover:bg-white/20 transition-colors p-4 rounded-xl border border-white/10 group">
-              <span className="font-medium">Gửi lời nhắn tâm tư</span>
-              <Heart className="w-5 h-5 text-white/50 group-hover:text-red-400 transition-colors" />
-            </button>
-          </div>
-        </TiltCard>
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        {quickDestinations.map((item, index) => {
+          const Icon = item.icon;
+          return (
+            <motion.div
+              key={item.path}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.08 }}
+            >
+              <TiltCard
+                className={`cursor-pointer bg-gradient-to-br ${item.accent}`}
+                glow={false}
+              >
+                <button
+                  type="button"
+                  onClick={() => navigate(item.path)}
+                  className="flex h-full w-full flex-col items-start gap-4 text-left"
+                >
+                  <div className="rounded-2xl bg-white/10 p-3">
+                    <Icon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">{item.title}</h2>
+                    <p className="mt-2 text-sm leading-6 text-white/65">{item.description}</p>
+                  </div>
+                </button>
+              </TiltCard>
+            </motion.div>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* To-Do List */}
-        <TiltCard>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-white/90 flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-blue-400" />
-              Việc cần làm
-            </h2>
-            <button className="text-sm text-orange-400 hover:text-orange-300">Xem tất cả</button>
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <TiltCard className="bg-white/5">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="rounded-2xl bg-rose-500/20 p-3">
+              <Mail className="h-6 w-6 text-rose-400" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white">Gửi nhanh vào hộp tâm thư</h2>
+              <p className="text-sm text-white/60">
+                Viết nhanh tại đây, rồi chuyển thẳng sang hũ bí ẩn để niêm phong.
+              </p>
+            </div>
           </div>
-          
-          <div className="space-y-3">
-            {[
-              { id: 1, task: 'Mua vé xem phim Dune 2', assignee: 'Nam', done: false },
-              { id: 2, task: 'Đặt bàn nhà hàng kỷ niệm', assignee: 'Cy', done: true },
-              { id: 3, task: 'Chuyển tiền quỹ tháng', assignee: 'Nam', done: false },
-            ].map((todo) => (
-              <div key={todo.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition-colors group cursor-pointer">
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${todo.done ? 'bg-green-500 border-green-500' : 'border-white/30 group-hover:border-orange-400'}`}>
-                  {todo.done && <CheckCircle2 className="w-4 h-4 text-white" />}
-                </div>
-                <span className={`flex-1 ${todo.done ? 'line-through text-white/40' : 'text-white/90'}`}>
-                  {todo.task}
-                </span>
-                <span className="text-xs px-2 py-1 rounded bg-white/10 text-white/60">
-                  {todo.assignee}
-                </span>
+
+          <div className="space-y-4">
+            <textarea
+              value={quickLetter}
+              onChange={(event) => setQuickLetter(event.target.value)}
+              placeholder="Nhập điều bạn muốn gửi gắm..."
+              rows={5}
+              className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-white placeholder:text-white/30 focus:border-rose-400 focus:outline-none"
+            />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm text-white/60">Sắc thái</label>
+                <select
+                  value={quickEmotion}
+                  onChange={(event) => setQuickEmotion(event.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-rose-400 focus:outline-none"
+                >
+                  <option value="Yêu thương">Yêu thương</option>
+                  <option value="Biết ơn">Biết ơn</option>
+                  <option value="Xin lỗi">Xin lỗi</option>
+                  <option value="Bất ngờ">Bất ngờ</option>
+                  <option value="Nhớ thương">Nhớ thương</option>
+                </select>
               </div>
-            ))}
+
+              <div>
+                <label className="mb-2 block text-sm text-white/60">Mở sau</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={unlockDays}
+                  onChange={(event) => setUnlockDays(parseInt(event.target.value, 10) || 1)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-rose-400 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleQuickLetter}
+                disabled={!quickLetter.trim()}
+                className="rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-3 font-semibold text-white shadow-lg shadow-rose-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Chuyển vào hũ bí ẩn
+              </button>
+            </div>
           </div>
         </TiltCard>
 
-        {/* Memory Highlight */}
-        <TiltCard className="relative overflow-hidden group p-0">
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
-          <img 
-            src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?q=80&w=2070&auto=format&fit=crop" 
-            alt="Memory" 
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          />
-          <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
-            <div className="flex items-center gap-2 mb-2">
-              <ImageIcon className="w-4 h-4 text-orange-400" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-orange-400">Kỷ niệm nổi bật</span>
+        <TiltCard className="overflow-hidden p-0">
+          <button
+            type="button"
+            onClick={() => navigate('/memories')}
+            className="group relative h-full min-h-[320px] w-full text-left"
+          >
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
+            <img
+              src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?q=80&w=2070&auto=format&fit=crop"
+              alt="Kỷ niệm nổi bật"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+            <div className="relative z-10 flex h-full flex-col justify-end p-6">
+              <p className="text-sm uppercase tracking-[0.28em] text-orange-300">Album kỷ niệm</p>
+              <h3 className="mt-3 text-3xl font-bold text-white">Mở ngay những khoảnh khắc đẹp nhất</h3>
+              <p className="mt-3 max-w-md text-white/70">
+                Chỉnh sửa, thay ảnh, hoặc thêm ảnh mới trực tiếp từ máy ngay trong thư viện.
+              </p>
             </div>
-            <h3 className="text-2xl font-bold text-white mb-1">Chuyến đi Đà Lạt</h3>
-            <p className="text-white/70 text-sm">Ngày này 1 năm trước</p>
-          </div>
+          </button>
         </TiltCard>
       </div>
     </div>
