@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   CalendarHeart,
@@ -10,6 +10,14 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TiltCard from '../components/TiltCard';
+import { supabase } from '../lib/supabase';
+
+type FeaturedMemory = {
+  id: string;
+  title: string;
+  image_url: string;
+  description: string;
+};
 
 const quickDestinations = [
   {
@@ -47,6 +55,22 @@ export default function Dashboard() {
   const [quickLetter, setQuickLetter] = useState('');
   const [quickEmotion, setQuickEmotion] = useState('Yêu thương');
   const [unlockDays, setUnlockDays] = useState(3);
+  const [featuredMemory, setFeaturedMemory] = useState<FeaturedMemory | null>(null);
+
+  useEffect(() => {
+    const loadFeaturedMemory = async () => {
+      const { data } = await supabase
+        .from('memories')
+        .select('id, title, image_url, description')
+        .order('memory_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      setFeaturedMemory((data as FeaturedMemory | null) ?? null);
+    };
+
+    void loadFeaturedMemory();
+  }, []);
 
   const handleQuickLetter = () => {
     navigate('/emotional-memory', {
@@ -96,10 +120,7 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.08 }}
             >
-              <TiltCard
-                className={`cursor-pointer bg-gradient-to-br ${item.accent}`}
-                glow={false}
-              >
+              <TiltCard className={`cursor-pointer bg-gradient-to-br ${item.accent}`} glow={false}>
                 <button
                   type="button"
                   onClick={() => navigate(item.path)}
@@ -190,16 +211,23 @@ export default function Dashboard() {
             className="group relative h-full min-h-[320px] w-full text-left"
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
-            <img
-              src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?q=80&w=2070&auto=format&fit=crop"
-              alt="Kỷ niệm nổi bật"
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
+            {featuredMemory ? (
+              <img
+                src={featuredMemory.image_url}
+                alt={featuredMemory.title}
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 via-rose-500/10 to-pink-500/20" />
+            )}
             <div className="relative z-10 flex h-full flex-col justify-end p-6">
               <p className="text-sm uppercase tracking-[0.28em] text-orange-300">Album kỷ niệm</p>
-              <h3 className="mt-3 text-3xl font-bold text-white">Mở ngay những khoảnh khắc đẹp nhất</h3>
+              <h3 className="mt-3 text-3xl font-bold text-white">
+                {featuredMemory?.title ?? 'Mở ngay những khoảnh khắc đẹp nhất'}
+              </h3>
               <p className="mt-3 max-w-md text-white/70">
-                Chỉnh sửa, thay ảnh, hoặc thêm ảnh mới trực tiếp từ máy ngay trong thư viện.
+                {featuredMemory?.description ??
+                  'Chỉnh sửa, thay ảnh, hoặc thêm ảnh mới trực tiếp từ máy ngay trong thư viện.'}
               </p>
             </div>
           </button>
