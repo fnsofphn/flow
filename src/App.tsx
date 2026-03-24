@@ -1,32 +1,35 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Fragment, Suspense } from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Finance from './pages/Finance';
-import Memories from './pages/Memories';
-import Todo from './pages/Todo';
-import DatePlanner from './pages/DatePlanner';
-import TradingHub from './pages/TradingHub';
-import DreamAI from './pages/DreamAI';
-import EmotionalMemory from './pages/EmotionalMemory';
-import TravelSystem from './pages/TravelSystem';
-import NannyContract from './pages/NannyContract';
+import { appRoutes } from './app/routes';
+import NotFound from './pages/NotFound';
 
 export default function App() {
   return (
     <Router>
       <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/finance" element={<Finance />} />
-          <Route path="/memories" element={<Memories />} />
-          <Route path="/todo" element={<Todo />} />
-          <Route path="/date-planner" element={<DatePlanner />} />
-          <Route path="/trading" element={<TradingHub />} />
-          <Route path="/dream-ai" element={<DreamAI />} />
-          <Route path="/emotional-memory" element={<EmotionalMemory />} />
-          <Route path="/travel" element={<TravelSystem />} />
-          <Route path="/contract" element={<NannyContract />} />
-        </Routes>
+        <Suspense
+          fallback={
+            <div className="flex min-h-[60vh] items-center justify-center">
+              <div className="glass-card px-6 py-4 text-sm font-medium text-white/70">
+                Dang tai giao dien...
+              </div>
+            </div>
+          }
+        >
+          <Routes>
+            {appRoutes.map((route) => {
+              const RouteComponent = route.component;
+
+              return (
+                <Fragment key={route.path}>
+                  <Route path={route.path} element={<RouteComponent />} />
+                </Fragment>
+              );
+            })}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </Layout>
     </Router>
   );

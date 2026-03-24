@@ -1,27 +1,11 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { 
-  Home, Wallet, Image as ImageIcon, CheckSquare, 
-  CalendarHeart, TrendingUp, Moon, Heart, 
-  Plane, FileSignature, Music
-} from 'lucide-react';
 import { cn } from '../lib/utils';
+import { navigationItems } from '../app/routes';
 import MusicPlayer from './MusicPlayer';
 import ParticlesBackground from './ParticlesBackground';
-
-const navItems = [
-  { path: '/', icon: Home, label: 'Dashboard' },
-  { path: '/finance', icon: Wallet, label: 'Finance' },
-  { path: '/memories', icon: ImageIcon, label: 'Memories' },
-  { path: '/todo', icon: CheckSquare, label: 'To-Do' },
-  { path: '/date-planner', icon: CalendarHeart, label: 'Date Planner' },
-  { path: '/trading', icon: TrendingUp, label: 'Trading Hub' },
-  { path: '/dream-ai', icon: Moon, label: 'Dream AI' },
-  { path: '/emotional-memory', icon: Heart, label: 'Emotional Memory' },
-  { path: '/travel', icon: Plane, label: 'Travel System' },
-  { path: '/contract', icon: FileSignature, label: 'Nanny Contract' },
-];
+import SupabaseStatus from './SupabaseStatus';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -43,7 +27,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 w-full space-y-2 overflow-y-auto no-scrollbar">
-          {navItems.map((item) => (
+          {navigationItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -54,7 +38,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               {({ isActive }) => (
                 <>
-                  <item.icon className={cn("w-5 h-5 transition-transform duration-300", isActive ? "scale-110" : "group-hover:scale-110")} />
+                  {item.icon ? (
+                    <item.icon
+                      className={cn("w-5 h-5 transition-transform duration-300", isActive ? "scale-110" : "group-hover:scale-110")}
+                    />
+                  ) : null}
                   <span className="hidden md:block font-medium">{item.label}</span>
                   {isActive && (
                     <motion.div 
@@ -70,6 +58,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </NavLink>
           ))}
         </nav>
+
+        <div className="w-full">
+          <SupabaseStatus />
+        </div>
       </motion.aside>
 
       {/* Main Content */}
