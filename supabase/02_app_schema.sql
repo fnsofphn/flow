@@ -118,3 +118,89 @@ cross join (
     ('Xem phim', 300000, 1),
     ('Dao pho di bo', 100000, 2)
 ) as seed(name, cost, sort_order);
+
+create table if not exists public.dream_entries (
+  id uuid primary key default gen_random_uuid(),
+  content text not null,
+  analysis text not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.emotional_notes (
+  id uuid primary key default gen_random_uuid(),
+  content text not null,
+  emotion text not null,
+  unlock_date timestamptz not null,
+  is_opened boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.contract_documents (
+  id uuid primary key default gen_random_uuid(),
+  title text not null default 'Hợp đồng bảo mẫu',
+  content text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.finance_entries (
+  id uuid primary key default gen_random_uuid(),
+  entry_type text not null check (entry_type in ('contribution', 'expense', 'adjustment')),
+  amount numeric(12, 0) not null check (amount >= 0),
+  currency text not null default 'VND',
+  person text,
+  reason text not null,
+  entry_at timestamptz not null default now(),
+  source text,
+  source_id uuid,
+  created_at timestamptz not null default now()
+);
+
+alter table public.date_plan_activities add column if not exists executed_at timestamptz;
+alter table public.date_plan_activities add column if not exists finance_entry_id uuid references public.finance_entries(id) on delete set null;
+
+create index if not exists dream_entries_created_at_idx on public.dream_entries (created_at desc);
+create index if not exists emotional_notes_unlock_date_idx on public.emotional_notes (unlock_date desc);
+create index if not exists finance_entries_entry_at_idx on public.finance_entries (entry_at desc);
+create index if not exists finance_entries_source_idx on public.finance_entries (source, source_id);
+
+alter table public.dream_entries enable row level security;
+alter table public.emotional_notes enable row level security;
+alter table public.contract_documents enable row level security;
+alter table public.finance_entries enable row level security;
+
+drop policy if exists "public can read dreams" on public.dream_entries;
+create policy "public can read dreams" on public.dream_entries for select to anon, authenticated using (true);
+drop policy if exists "public can insert dreams" on public.dream_entries;
+create policy "public can insert dreams" on public.dream_entries for insert to anon, authenticated with check (true);
+drop policy if exists "public can delete dreams" on public.dream_entries;
+create policy "public can delete dreams" on public.dream_entries for delete to anon, authenticated using (true);
+
+drop policy if exists "public can read emotional notes" on public.emotional_notes;
+create policy "public can read emotional notes" on public.emotional_notes for select to anon, authenticated using (true);
+drop policy if exists "public can insert emotional notes" on public.emotional_notes;
+create policy "public can insert emotional notes" on public.emotional_notes for insert to anon, authenticated with check (true);
+drop policy if exists "public can update emotional notes" on public.emotional_notes;
+create policy "public can update emotional notes" on public.emotional_notes for update to anon, authenticated using (true) with check (true);
+drop policy if exists "public can delete emotional notes" on public.emotional_notes;
+create policy "public can delete emotional notes" on public.emotional_notes for delete to anon, authenticated using (true);
+
+drop policy if exists "public can read contract documents" on public.contract_documents;
+create policy "public can read contract documents" on public.contract_documents for select to anon, authenticated using (true);
+drop policy if exists "public can insert contract documents" on public.contract_documents;
+create policy "public can insert contract documents" on public.contract_documents for insert to anon, authenticated with check (true);
+drop policy if exists "public can update contract documents" on public.contract_documents;
+create policy "public can update contract documents" on public.contract_documents for update to anon, authenticated using (true) with check (true);
+
+drop policy if exists "public can read finance entries" on public.finance_entries;
+create policy "public can read finance entries" on public.finance_entries for select to anon, authenticated using (true);
+drop policy if exists "public can insert finance entries" on public.finance_entries;
+create policy "public can insert finance entries" on public.finance_entries for insert to anon, authenticated with check (true);
+drop policy if exists "public can update finance entries" on public.finance_entries;
+create policy "public can update finance entries" on public.finance_entries for update to anon, authenticated using (true) with check (true);
+drop policy if exists "public can delete finance entries" on public.finance_entries;
+create policy "public can delete finance entries" on public.finance_entries for delete to anon, authenticated using (true);
+
+insert into public.contract_documents (title, content)
+select 'Hợp đồng bảo mẫu', ''
+where not exists (select 1 from public.contract_documents);

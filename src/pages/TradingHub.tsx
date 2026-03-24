@@ -1,125 +1,144 @@
-import React from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { TrendingUp, TrendingDown, Activity, DollarSign, BarChart2 } from 'lucide-react';
+import { Activity, BarChart2, RefreshCcw, TrendingDown, TrendingUp } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import TiltCard from '../components/TiltCard';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const data = [
-  { name: '10:00', price: 65000 },
-  { name: '11:00', price: 65200 },
-  { name: '12:00', price: 64800 },
-  { name: '13:00', price: 66000 },
-  { name: '14:00', price: 65900 },
-  { name: '15:00', price: 67200 },
-  { name: '16:00', price: 67500 },
-];
+type MarketPoint = {
+  timestamp: number;
+  close: number;
+};
+
+type MarketAsset = {
+  key: 'btc' | 'gold' | 'silver';
+  label: string;
+  symbol: string;
+  usd: number;
+  vnd: number;
+  changePercent: number;
+  series: MarketPoint[];
+};
+
+type MarketOverview = {
+  updatedAt: string;
+  usdToVnd: number;
+  assets: MarketAsset[];
+};
 
 export default function TradingHub() {
+  const [overview, setOverview] = useState<MarketOverview | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadOverview = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/market-overview');
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.message ?? 'Không thể tải dữ liệu thị trường.');
+      }
+
+      setOverview(payload as MarketOverview);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Không thể tải dữ liệu thị trường.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadOverview();
+    const intervalId = window.setInterval(() => {
+      void loadOverview();
+    }, 120000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  const btcSeries = useMemo(() => {
+    const asset = overview?.assets.find((item) => item.key === 'btc');
+    return (asset?.series ?? []).map((point) => ({
+      time: new Date(point.timestamp * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      price: point.close,
+    }));
+  }, [overview]);
+
   return (
     <div className="space-y-8 pb-24">
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="text-4xl font-bold tracking-tight mb-2 flex items-center gap-3">
-            Trading Hub
-            <Activity className="w-8 h-8 text-green-400" />
+          <h1 className="mb-2 flex items-center gap-3 text-4xl font-bold tracking-tight">
+            Thị trường
+            <Activity className="h-8 w-8 text-green-400" />
           </h1>
-          <p className="text-white/60 text-lg">Theo dõi thị trường và nhật ký giao dịch.</p>
+          <p className="text-lg text-white/60">Theo dõi Bitcoin, vàng và bạc theo thời gian thực với cả USD và VNĐ.</p>
         </motion.div>
-        
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.8 }} 
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-full backdrop-blur-md border border-white/10"
-        >
-          <span className="font-medium text-green-400">PnL: +$1,250.00</span>
-        </motion.div>
+
+        <div className="flex items-center gap-3">
+          <button onClick={() => void loadOverview()} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/10">
+            <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Làm mới
+          </button>
+          <div className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/65">
+            {overview ? `Cập nhật ${new Date(overview.updatedAt).toLocaleTimeString('vi-VN')}` : 'Đang chờ dữ liệu'}
+          </div>
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <TiltCard className="bg-gradient-to-br from-[#F7931A]/20 to-transparent border-[#F7931A]/30">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#F7931A] flex items-center justify-center font-bold text-white">
-                ₿
-              </div>
-              <div>
-                <h3 className="font-bold text-lg text-white/90">Bitcoin</h3>
-                <p className="text-sm text-white/50">BTC/USDT</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-xl">$67,500.00</p>
-              <p className="text-sm text-green-400 flex items-center justify-end gap-1">
-                <TrendingUp className="w-3 h-3" /> +2.4%
-              </p>
-            </div>
-          </div>
-        </TiltCard>
+      {error ? <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
 
-        <TiltCard className="bg-gradient-to-br from-[#FFD700]/20 to-transparent border-[#FFD700]/30">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#FFD700] flex items-center justify-center font-bold text-black">
-                Au
-              </div>
-              <div>
-                <h3 className="font-bold text-lg text-white/90">Vàng</h3>
-                <p className="text-sm text-white/50">XAU/USD</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-xl">$2,350.40</p>
-              <p className="text-sm text-red-400 flex items-center justify-end gap-1">
-                <TrendingDown className="w-3 h-3" /> -0.8%
-              </p>
-            </div>
-          </div>
-        </TiltCard>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {(overview?.assets ?? []).map((asset) => {
+          const isPositive = asset.changePercent >= 0;
+          return (
+            <div key={asset.key}>
+              <TiltCard className="border-white/10 bg-gradient-to-br from-white/10 to-transparent">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-white/90">{asset.label}</h3>
+                    <p className="text-sm text-white/50">{asset.symbol}</p>
+                  </div>
+                  <div className={`flex items-center gap-1 text-sm font-semibold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                    {isPositive ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                    {asset.changePercent.toFixed(2)}%
+                  </div>
+                </div>
 
-        <TiltCard className="bg-gradient-to-br from-[#C0C0C0]/20 to-transparent border-[#C0C0C0]/30">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#C0C0C0] flex items-center justify-center font-bold text-black">
-                Ag
-              </div>
-              <div>
-                <h3 className="font-bold text-lg text-white/90">Bạc</h3>
-                <p className="text-sm text-white/50">XAG/USD</p>
-              </div>
+                <div className="space-y-2">
+                  <p className="text-2xl font-bold text-white">${asset.usd.toLocaleString('en-US', { maximumFractionDigits: 2 })}</p>
+                  <p className="text-sm text-white/55">≈ {asset.vnd.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ</p>
+                </div>
+              </TiltCard>
             </div>
-            <div className="text-right">
-              <p className="font-bold text-xl">$28.15</p>
-              <p className="text-sm text-green-400 flex items-center justify-end gap-1">
-                <TrendingUp className="w-3 h-3" /> +1.2%
-              </p>
-            </div>
-          </div>
-        </TiltCard>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <TiltCard className="lg:col-span-2 h-[400px]">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <BarChart2 className="w-5 h-5 text-orange-400" />
-            Biểu đồ BTC/USDT
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <TiltCard className="h-[420px]">
+          <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
+            <BarChart2 className="h-5 w-5 text-orange-400" />
+            Biểu đồ Bitcoin trong ngày
           </h2>
-          <div className="h-[300px] w-full">
+          <div className="h-[320px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <AreaChart data={btcSeries} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#F7931A" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#F7931A" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#F7931A" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#F7931A" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" tick={{fill: 'rgba(255,255,255,0.5)'}} axisLine={false} tickLine={false} />
-                <YAxis domain={['dataMin - 1000', 'dataMax + 1000']} stroke="rgba(255,255,255,0.5)" tick={{fill: 'rgba(255,255,255,0.5)'}} axisLine={false} tickLine={false} tickFormatter={(value) => `$${value/1000}k`} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'rgba(20, 25, 40, 0.8)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', backdropFilter: 'blur(8px)' }}
-                  itemStyle={{ color: '#fff' }}
-                  formatter={(value: number) => [`$${value.toLocaleString()}`, 'Price']}
-                />
+                <XAxis dataKey="time" stroke="rgba(255,255,255,0.5)" tick={{ fill: 'rgba(255,255,255,0.5)' }} axisLine={false} tickLine={false} />
+                <YAxis stroke="rgba(255,255,255,0.5)" tick={{ fill: 'rgba(255,255,255,0.5)' }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${Math.round(value / 1000)}k`} />
+                <Tooltip contentStyle={{ backgroundColor: 'rgba(20, 25, 40, 0.8)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', backdropFilter: 'blur(8px)' }} itemStyle={{ color: '#fff' }} formatter={(value: number) => [`$${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}`, 'Giá']} />
                 <Area type="monotone" dataKey="price" stroke="#F7931A" strokeWidth={3} fillOpacity={1} fill="url(#colorPrice)" />
               </AreaChart>
             </ResponsiveContainer>
@@ -127,69 +146,22 @@ export default function TradingHub() {
         </TiltCard>
 
         <TiltCard>
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <Activity className="w-5 h-5 text-blue-400" />
-            Nhật ký giao dịch
-          </h2>
-          
+          <h2 className="mb-6 text-xl font-semibold text-white/90">Tỷ giá quy đổi</h2>
           <div className="space-y-4">
-            {[
-              { type: 'LONG', pair: 'BTC/USDT', entry: 65000, exit: 67000, pnl: 200, date: 'Hôm nay' },
-              { type: 'SHORT', pair: 'ETH/USDT', entry: 3500, exit: 3450, pnl: 50, date: 'Hôm qua' },
-              { type: 'LONG', pair: 'SOL/USDT', entry: 140, exit: 135, pnl: -20, date: '2 ngày trước' },
-            ].map((trade, idx) => (
-              <div key={idx} className="bg-white/5 border border-white/10 rounded-xl p-4 flex justify-between items-center hover:bg-white/10 transition-colors">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${trade.type === 'LONG' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                      {trade.type}
-                    </span>
-                    <span className="font-semibold text-white/90">{trade.pair}</span>
-                  </div>
-                  <p className="text-xs text-white/50">{trade.date} • {trade.entry} &rarr; {trade.exit}</p>
-                </div>
-                <div className={`font-bold ${trade.pnl > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {trade.pnl > 0 ? '+' : ''}${Math.abs(trade.pnl)}
-                </div>
-              </div>
-            ))}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm text-white/50">1 USD</p>
+              <p className="mt-2 text-3xl font-bold text-white">{overview?.usdToVnd?.toLocaleString('vi-VN', { maximumFractionDigits: 0 }) ?? '--'} đ</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-relaxed text-white/65">
+              <p>Dữ liệu thị trường đang được lấy động từ Yahoo Finance qua Vercel Function.</p>
+              <p className="mt-2">Giá vàng và bạc đang hiển thị theo hợp đồng tương lai USD/ounce để bạn có góc nhìn tham chiếu quốc tế, đồng thời quy đổi thêm sang VNĐ.</p>
+            </div>
+            {!overview && !isLoading ? (
+              <div className="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-white/50">Chưa nhận được dữ liệu thị trường. Hãy thử làm mới.</div>
+            ) : null}
           </div>
-
-          <button className="w-full mt-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 transition-colors font-medium flex items-center justify-center gap-2">
-            Thêm giao dịch
-          </button>
         </TiltCard>
       </div>
-      
-      {/* Coinglass Heatmap Mockup */}
-      <TiltCard className="h-[400px] p-0 overflow-hidden relative group">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10 pointer-events-none" />
-        <div className="absolute top-6 left-6 z-20 flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-          <h2 className="text-xl font-bold text-white drop-shadow-md">Coinglass Heatmap</h2>
-        </div>
-        <div className="w-full h-full bg-[#131722] flex items-center justify-center p-8">
-           {/* Mocking a heatmap with a grid of colored blocks */}
-           <div className="grid grid-cols-6 gap-2 w-full h-full opacity-80">
-              {Array.from({length: 24}).map((_, i) => {
-                const isGreen = Math.random() > 0.4;
-                const intensity = Math.random() * 0.8 + 0.2;
-                return (
-                  <div 
-                    key={i} 
-                    className={`rounded-md flex items-center justify-center text-xs font-bold text-white/80 transition-transform hover:scale-105 cursor-pointer`}
-                    style={{ 
-                      backgroundColor: isGreen ? `rgba(74, 222, 128, ${intensity})` : `rgba(248, 113, 113, ${intensity})`,
-                      boxShadow: `0 0 10px ${isGreen ? 'rgba(74, 222, 128, 0.2)' : 'rgba(248, 113, 113, 0.2)'}`
-                    }}
-                  >
-                    {isGreen ? '+' : '-'}{(Math.random() * 5).toFixed(1)}%
-                  </div>
-                )
-              })}
-           </div>
-        </div>
-      </TiltCard>
     </div>
   );
 }

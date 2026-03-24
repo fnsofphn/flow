@@ -1,4 +1,4 @@
-import { lazy, type LazyExoticComponent, type ComponentType } from 'react';
+﻿import { lazy, type LazyExoticComponent, type ComponentType } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
   CalendarHeart,
@@ -24,70 +24,70 @@ export interface AppRoute {
 export const appRoutes: AppRoute[] = [
   {
     path: '/',
-    label: 'Dashboard',
+    label: 'Tổng quan',
     icon: Home,
     nav: true,
     component: lazy(() => import('@/pages/Dashboard')),
   },
   {
     path: '/finance',
-    label: 'Finance',
+    label: 'Tài chính',
     icon: Wallet,
     nav: true,
     component: lazy(() => import('@/pages/Finance')),
   },
   {
     path: '/memories',
-    label: 'Memories',
+    label: 'Kỷ niệm',
     icon: ImageIcon,
     nav: true,
     component: lazy(() => import('@/pages/Memories')),
   },
   {
     path: '/todo',
-    label: 'To-Do',
+    label: 'Việc cần làm',
     icon: CheckSquare,
     nav: true,
     component: lazy(() => import('@/pages/Todo')),
   },
   {
     path: '/date-planner',
-    label: 'Date Planner',
+    label: 'Kế hoạch hẹn hò',
     icon: CalendarHeart,
     nav: true,
     component: lazy(() => import('@/pages/DatePlanner')),
   },
   {
     path: '/trading',
-    label: 'Trading Hub',
+    label: 'Thị trường',
     icon: TrendingUp,
     nav: true,
     component: lazy(() => import('@/pages/TradingHub')),
   },
   {
     path: '/dream-ai',
-    label: 'Dream AI',
+    label: 'Giấc mơ AI',
     icon: Moon,
     nav: true,
     component: lazy(() => import('@/pages/DreamAI')),
   },
   {
     path: '/emotional-memory',
-    label: 'Emotional Memory',
+    label: 'Hộp tâm tư',
     icon: Heart,
     nav: true,
     component: lazy(() => import('@/pages/EmotionalMemory')),
   },
   {
     path: '/travel',
-    label: 'Travel System',
+    label: 'Du lịch',
     icon: Plane,
     nav: true,
     component: lazy(() => import('@/pages/TravelSystem')),
   },
   {
     path: '/contract',
-    label: 'Nanny Contract',
+    label: 'Hợp đồng bảo mẫu',
     icon: FileSignature,
     nav: true,
     component: lazy(() => import('@/pages/NannyContract')),

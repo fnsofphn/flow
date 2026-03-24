@@ -1,230 +1,156 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { FileSignature, Coins, History, CheckCircle2, AlertCircle } from 'lucide-react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'motion/react';
+import { Coins, FileSignature, Save } from 'lucide-react';
 import TiltCard from '../components/TiltCard';
+import { supabase } from '../lib/supabase';
 
-interface Payment {
-  id: number;
-  amount: number;
-  date: string;
-  reason: string;
-}
-
-const initialPayments: Payment[] = [
-  { id: 1, amount: 50, date: '2024-03-01T10:00', reason: 'Lương tháng 2' },
-  { id: 2, amount: 10, date: '2024-03-15T14:30', reason: 'Thưởng nấu ăn ngon' },
-];
+type ContractDocument = {
+  id: string;
+  title: string;
+  content: string;
+  updated_at: string;
+};
 
 export default function NannyContract() {
-  const [payments, setPayments] = useState<Payment[]>(initialPayments);
-  const [isPaying, setIsPaying] = useState(false);
-  const [payAmount, setPayAmount] = useState('');
-  const [payReason, setPayReason] = useState('');
+  const [documentState, setDocumentState] = useState<ContractDocument | null>(null);
+  const [title, setTitle] = useState('Hợp đồng bảo mẫu');
+  const [content, setContent] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+  const stats = useMemo(() => {
+    const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+    const paragraphs = content.trim() ? content.trim().split(/\n\s*\n/).length : 0;
+    return { words, paragraphs };
+  }, [content]);
 
-  const handlePay = () => {
-    if (!payAmount || isNaN(Number(payAmount)) || Number(payAmount) <= 0) return;
-    
-    const newPayment: Payment = {
-      id: Date.now(),
-      amount: Number(payAmount),
-      date: new Date().toISOString(),
-      reason: payReason || 'Thanh toán định kỳ'
-    };
+  const loadDocument = async () => {
+    const { data, error: queryError } = await supabase
+      .from('contract_documents')
+      .select('id, title, content, updated_at')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
-    setPayments([newPayment, ...payments]);
-    setIsPaying(false);
-    setPayAmount('');
-    setPayReason('');
+    if (queryError) {
+      setError(queryError.message);
+      return;
+    }
+
+    if (data) {
+      const contract = data as ContractDocument;
+      setDocumentState(contract);
+      setTitle(contract.title);
+      setContent(contract.content);
+    }
+  };
+
+  useEffect(() => {
+    void loadDocument();
+  }, []);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setError(null);
+
+    if (documentState) {
+      const { data, error: updateError } = await supabase
+        .from('contract_documents')
+        .update({ title: title.trim() || 'Hợp đồng bảo mẫu', content, updated_at: new Date().toISOString() })
+        .eq('id', documentState.id)
+        .select('id, title, content, updated_at')
+        .single();
+
+      if (updateError) {
+        setError(updateError.message);
+      } else if (data) {
+        setDocumentState(data as ContractDocument);
+      }
+    } else {
+      const { data, error: insertError } = await supabase
+        .from('contract_documents')
+        .insert({ title: title.trim() || 'Hợp đồng bảo mẫu', content })
+        .select('id, title, content, updated_at')
+        .single();
+
+      if (insertError) {
+        setError(insertError.message);
+      } else if (data) {
+        setDocumentState(data as ContractDocument);
+      }
+    }
+
+    setIsSaving(false);
   };
 
   return (
-    <div className="space-y-8 pb-24 relative">
-      <header className="flex justify-between items-end">
+    <div className="relative space-y-8 pb-24">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="text-4xl font-bold tracking-tight mb-2 flex items-center gap-3">
-            Hợp đồng Bảo Mẫu
-            <FileSignature className="w-8 h-8 text-amber-500" />
+          <h1 className="mb-2 flex items-center gap-3 text-4xl font-bold tracking-tight">
+            Hợp đồng bảo mẫu
+            <FileSignature className="h-8 w-8 text-amber-500" />
           </h1>
-          <p className="text-white/60 text-lg">Bản hợp đồng đặc biệt giữa Nam và Cy.</p>
+          <p className="text-lg text-white/60">Không còn mockup hợp đồng. Bạn có thể tự biên soạn và lưu nội dung chính thức tại đây.</p>
         </motion.div>
-        
-        <motion.button 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setIsPaying(true)}
-          className="bg-gradient-to-r from-amber-500 to-yellow-500 text-black px-6 py-3 rounded-xl font-bold shadow-lg shadow-amber-500/30 flex items-center gap-2"
+
+        <button
+          onClick={() => void handleSave()}
+          disabled={isSaving}
+          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 px-6 py-3 font-bold text-black shadow-lg shadow-amber-500/30 disabled:opacity-60"
         >
-          <Coins className="w-5 h-5" />
-          Trả lương (Bạc)
-        </motion.button>
+          <Save className="h-5 w-5" />
+          {isSaving ? 'Đang lưu...' : 'Lưu hợp đồng'}
+        </button>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Contract Document */}
-        <TiltCard className="lg:col-span-2 bg-[#fdfbf7] text-[#3a2a22] relative overflow-hidden" glow={false}>
-          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cream-paper.png")' }} />
-          
-          <div className="relative z-10 p-4 md:p-8 border-4 border-double border-[#3a2a22]/20">
-            <div className="text-center mb-8 border-b-2 border-[#3a2a22]/20 pb-6">
-              <h2 className="text-3xl font-serif font-bold uppercase tracking-widest text-[#5c4033]">Hợp Đồng Thuê Bảo Mẫu</h2>
-              <p className="font-serif italic text-[#3a2a22]/60 mt-2">Số: 01/NC-2024</p>
-            </div>
+      {error ? <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
 
-            <div className="space-y-6 font-serif leading-relaxed text-lg">
-              <p>
-                Hôm nay, ngày 01 tháng 01 năm 2024, tại "Không gian sống số NamCy", chúng tôi gồm:
-              </p>
-              
-              <div className="pl-4 border-l-2 border-[#5c4033]/30">
-                <p><strong>Bên A (Người thuê):</strong> Nam</p>
-                <p><strong>Bên B (Bảo mẫu):</strong> Cy</p>
-              </div>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <TiltCard className="space-y-5">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-white/60">Tiêu đề</label>
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-amber-400 focus:outline-none"
+            />
+          </div>
 
-              <p>Hai bên thống nhất ký kết hợp đồng với các điều khoản sau:</p>
-
-              <ol className="list-decimal list-inside space-y-4 pl-4">
-                <li>
-                  <strong>Công việc:</strong> Bên B chịu trách nhiệm chăm sóc, nhắc nhở, và mang lại niềm vui cho Bên A mỗi ngày.
-                </li>
-                <li>
-                  <strong>Mức lương:</strong> Thanh toán bằng đơn vị "Bạc". Mức lương cơ bản: 50 Bạc/tháng.
-                </li>
-                <li>
-                  <strong>Thưởng phạt:</strong> Thưởng thêm Bạc nếu Bên B hoàn thành xuất sắc nhiệm vụ (nấu ăn ngon, dỗ dành khi Bên A buồn). Phạt (trừ Bạc) nếu Bên B dỗi vô cớ quá 3 lần/tuần.
-                </li>
-                <li>
-                  <strong>Thời hạn:</strong> Hợp đồng có giá trị vô thời hạn, hoặc cho đến khi hai bên quyết định nâng cấp lên "Hợp đồng Hôn nhân".
-                </li>
-              </ol>
-
-              <div className="mt-12 flex justify-between items-end pt-8 border-t-2 border-[#3a2a22]/20">
-                <div className="text-center">
-                  <p className="font-bold mb-8">Bên A</p>
-                  <p className="font-signature text-3xl text-blue-800 -rotate-6">Nam</p>
-                  <p className="text-sm mt-2 opacity-60">Đã ký (Digital)</p>
-                </div>
-                <div className="text-center">
-                  <p className="font-bold mb-8">Bên B</p>
-                  <p className="font-signature text-3xl text-rose-600 -rotate-3">Cy</p>
-                  <p className="text-sm mt-2 opacity-60">Đã ký (Digital)</p>
-                </div>
-              </div>
-            </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-white/60">Nội dung hợp đồng</label>
+            <textarea
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              placeholder="Bạn có thể tự nhập toàn bộ điều khoản, phạm vi công việc, thời hạn và điều kiện thanh toán tại đây."
+              className="min-h-[520px] w-full rounded-2xl border border-white/10 bg-white/5 p-5 text-white placeholder:text-white/30 focus:border-amber-400 focus:outline-none"
+            />
           </div>
         </TiltCard>
 
-        {/* Tracking Panel */}
         <div className="space-y-6">
-          <TiltCard className="bg-gradient-to-br from-amber-900/40 to-yellow-900/40 border-amber-500/30">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-amber-500/20 rounded-xl">
-                <Coins className="w-6 h-6 text-amber-400" />
+          <TiltCard className="bg-gradient-to-br from-amber-900/35 to-yellow-900/35 border-amber-500/25">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-amber-500/20 p-3">
+                <Coins className="h-6 w-6 text-amber-400" />
               </div>
               <div>
-                <p className="text-sm text-white/60 font-medium">Tổng Bạc đã trả</p>
-                <p className="text-3xl font-bold text-amber-400">{totalPaid}</p>
+                <p className="text-sm text-white/60">Từ khóa nội dung</p>
+                <p className="text-3xl font-bold text-amber-300">{stats.words}</p>
               </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-white/10 flex items-center gap-2 text-sm text-white/50">
-              <CheckCircle2 className="w-4 h-4 text-green-400" />
-              Đã thanh toán đầy đủ tháng này
             </div>
           </TiltCard>
 
           <TiltCard>
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <History className="w-5 h-5 text-amber-400" />
-              Lịch sử thanh toán
-            </h3>
-            
-            <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-              {payments.map((payment) => (
-                <div key={payment.id} className="bg-white/5 border border-white/10 rounded-xl p-4 flex justify-between items-center hover:bg-white/10 transition-colors">
-                  <div>
-                    <p className="font-medium text-white/90">{payment.reason}</p>
-                    <p className="text-xs text-white/50 mt-1">
-                      {new Date(payment.date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}
-                    </p>
-                  </div>
-                  <div className="font-bold text-amber-400 flex items-center gap-1">
-                    +{payment.amount} <Coins className="w-4 h-4" />
-                  </div>
-                </div>
-              ))}
+            <h2 className="text-xl font-semibold text-white/90">Trạng thái tài liệu</h2>
+            <div className="mt-4 space-y-4 text-sm text-white/65">
+              <p>Số đoạn nội dung: <span className="font-semibold text-white">{stats.paragraphs}</span></p>
+              <p>Lần cập nhật gần nhất: <span className="font-semibold text-white">{documentState ? new Date(documentState.updated_at).toLocaleString('vi-VN') : 'Chưa lưu lần nào'}</span></p>
+              <p>Gợi ý: bạn có thể tách hợp đồng thành các phần như phạm vi công việc, quy định phối hợp, thanh toán và điều khoản thay đổi.</p>
             </div>
           </TiltCard>
         </div>
       </div>
-
-      {/* Payment Modal */}
-      <AnimatePresence>
-        {isPaying && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
-              onClick={() => setIsPaying(false)}
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] w-full max-w-md bg-gray-900 rounded-3xl border border-white/10 shadow-2xl p-8"
-            >
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-amber-400">
-                <Coins className="w-6 h-6" />
-                Trả lương (Bạc)
-              </h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-white/70 mb-2">Số lượng Bạc</label>
-                  <div className="relative">
-                    <input 
-                      type="number" 
-                      value={payAmount}
-                      onChange={(e) => setPayAmount(e.target.value)}
-                      placeholder="VD: 50"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-amber-500 text-xl font-bold"
-                    />
-                    <Coins className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500/50" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-white/70 mb-2">Lý do / Ghi chú</label>
-                  <input 
-                    type="text" 
-                    value={payReason}
-                    onChange={(e) => setPayReason(e.target.value)}
-                    placeholder="VD: Lương tháng 3, thưởng..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3 mt-4">
-                  <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                  <p className="text-sm text-amber-200/80">
-                    Bạc đã chuyển sẽ không thể thu hồi. Hãy chắc chắn bạn muốn trả số Bạc này cho Cy.
-                  </p>
-                </div>
-
-                <button 
-                  onClick={handlePay}
-                  disabled={!payAmount || isNaN(Number(payAmount)) || Number(payAmount) <= 0}
-                  className="w-full mt-6 bg-gradient-to-r from-amber-500 to-yellow-500 text-black py-4 rounded-xl font-bold shadow-lg shadow-amber-500/30 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
-                >
-                  Xác nhận chuyển Bạc
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

@@ -1,154 +1,229 @@
-import React from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Wallet, TrendingUp, TrendingDown, PieChart, Target } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle, Landmark, Plus, Wallet } from 'lucide-react';
 import TiltCard from '../components/TiltCard';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { supabase } from '../lib/supabase';
 
-const data = [
-  { name: 'T1', thu: 4000, chi: 2400 },
-  { name: 'T2', thu: 3000, chi: 1398 },
-  { name: 'T3', thu: 2000, chi: 9800 },
-  { name: 'T4', thu: 2780, chi: 3908 },
-  { name: 'T5', thu: 1890, chi: 4800 },
-  { name: 'T6', thu: 2390, chi: 3800 },
-  { name: 'T7', thu: 3490, chi: 4300 },
-];
+type FinanceEntry = {
+  id: string;
+  entry_type: 'contribution' | 'expense' | 'adjustment';
+  amount: number;
+  currency: string;
+  person: string | null;
+  reason: string;
+  entry_at: string;
+  source: string | null;
+};
+
+const emptyForm = {
+  entryType: 'contribution',
+  amount: '',
+  person: '',
+  reason: '',
+  entryAt: '',
+};
 
 export default function Finance() {
+  const [entries, setEntries] = useState<FinanceEntry[]>([]);
+  const [form, setForm] = useState(emptyForm);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const loadEntries = async () => {
+    const { data, error: queryError } = await supabase
+      .from('finance_entries')
+      .select('id, entry_type, amount, currency, person, reason, entry_at, source')
+      .order('entry_at', { ascending: false });
+
+    if (queryError) {
+      setError(queryError.message);
+      return;
+    }
+
+    setEntries((data as FinanceEntry[]) ?? []);
+  };
+
+  useEffect(() => {
+    void loadEntries();
+  }, []);
+
+  const summary = useMemo(() => {
+    const contributions = entries
+      .filter((entry) => entry.entry_type === 'contribution')
+      .reduce((sum, entry) => sum + Number(entry.amount), 0);
+    const expenses = entries
+      .filter((entry) => entry.entry_type === 'expense')
+      .reduce((sum, entry) => sum + Number(entry.amount), 0);
+    const adjustments = entries
+      .filter((entry) => entry.entry_type === 'adjustment')
+      .reduce((sum, entry) => sum + Number(entry.amount), 0);
+
+    return {
+      contributions,
+      expenses,
+      adjustments,
+      balance: contributions - expenses + adjustments,
+    };
+  }, [entries]);
+
+  const handleSubmit = async () => {
+    if (!form.amount || !form.reason.trim()) {
+      setError('Vui lòng nhập số tiền và lý do.');
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    const payload = {
+      entry_type: form.entryType,
+      amount: Number(form.amount),
+      currency: 'VND',
+      person: form.person.trim() || null,
+      reason: form.reason.trim(),
+      entry_at: form.entryAt ? new Date(form.entryAt).toISOString() : new Date().toISOString(),
+    };
+
+    const { data, error: insertError } = await supabase
+      .from('finance_entries')
+      .insert(payload)
+      .select('id, entry_type, amount, currency, person, reason, entry_at, source')
+      .single();
+
+    if (insertError) {
+      setError(insertError.message);
+    } else if (data) {
+      setEntries((current) => [data as FinanceEntry, ...current]);
+      setForm(emptyForm);
+    }
+
+    setIsSaving(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    const previous = entries;
+    setEntries((current) => current.filter((entry) => entry.id !== id));
+
+    const { error: deleteError } = await supabase.from('finance_entries').delete().eq('id', id);
+
+    if (deleteError) {
+      setEntries(previous);
+      setError(deleteError.message);
+    }
+  };
+
   return (
     <div className="space-y-8 pb-24">
       <header>
-        <motion.h1 
-          initial={{ opacity: 0, x: -20 }} 
-          animate={{ opacity: 1, x: 0 }}
-          className="text-4xl font-bold tracking-tight mb-2"
-        >
-          Quản lý tài chính
+        <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="mb-2 text-4xl font-bold tracking-tight">
+          Tài chính chung
         </motion.h1>
-        <motion.p 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          transition={{ delay: 0.1 }}
-          className="text-white/60 text-lg"
-        >
-          Cùng nhau xây dựng tương lai.
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="text-lg text-white/60">
+          Theo dõi đóng quỹ, chi quỹ và các khoản điều chỉnh bằng đơn vị VNĐ.
         </motion.p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <TiltCard className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-blue-500/30">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-blue-500/20 rounded-xl">
-              <Wallet className="w-6 h-6 text-blue-400" />
-            </div>
+      {error ? <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <TiltCard className="border-blue-500/30 bg-gradient-to-br from-blue-500/20 to-transparent">
+          <div className="flex items-center gap-4">
+            <div className="rounded-xl bg-blue-500/20 p-3"><Wallet className="h-6 w-6 text-blue-400" /></div>
             <div>
-              <p className="text-sm text-white/60 font-medium">Tổng Quỹ</p>
-              <p className="text-2xl font-bold">24,500,000đ</p>
+              <p className="text-sm font-medium text-white/60">Số dư quỹ</p>
+              <p className="text-2xl font-bold">{summary.balance.toLocaleString('vi-VN')} đ</p>
             </div>
           </div>
         </TiltCard>
-
-        <TiltCard className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-green-500/30">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-green-500/20 rounded-xl">
-              <TrendingUp className="w-6 h-6 text-green-400" />
-            </div>
+        <TiltCard className="border-green-500/30 bg-gradient-to-br from-green-500/20 to-transparent">
+          <div className="flex items-center gap-4">
+            <div className="rounded-xl bg-green-500/20 p-3"><ArrowUpCircle className="h-6 w-6 text-green-400" /></div>
             <div>
-              <p className="text-sm text-white/60 font-medium">Thu nhập tháng</p>
-              <p className="text-2xl font-bold text-green-400">+12,000,000đ</p>
+              <p className="text-sm font-medium text-white/60">Đã đóng quỹ</p>
+              <p className="text-2xl font-bold text-green-300">+{summary.contributions.toLocaleString('vi-VN')} đ</p>
             </div>
           </div>
         </TiltCard>
-
-        <TiltCard className="bg-gradient-to-br from-red-500/20 to-orange-500/20 border-red-500/30">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-red-500/20 rounded-xl">
-              <TrendingDown className="w-6 h-6 text-red-400" />
-            </div>
+        <TiltCard className="border-red-500/30 bg-gradient-to-br from-red-500/20 to-transparent">
+          <div className="flex items-center gap-4">
+            <div className="rounded-xl bg-red-500/20 p-3"><ArrowDownCircle className="h-6 w-6 text-red-400" /></div>
             <div>
-              <p className="text-sm text-white/60 font-medium">Chi tiêu tháng</p>
-              <p className="text-2xl font-bold text-red-400">-4,200,000đ</p>
+              <p className="text-sm font-medium text-white/60">Đã chi quỹ</p>
+              <p className="text-2xl font-bold text-red-300">-{summary.expenses.toLocaleString('vi-VN')} đ</p>
             </div>
           </div>
         </TiltCard>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <TiltCard className="lg:col-span-2 h-[400px]">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <PieChart className="w-5 h-5 text-orange-400" />
-            Biểu đồ Thu Chi
-          </h2>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorThu" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#4ade80" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#4ade80" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorChi" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f87171" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#f87171" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
-                <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" tick={{fill: 'rgba(255,255,255,0.5)'}} axisLine={false} tickLine={false} />
-                <YAxis stroke="rgba(255,255,255,0.5)" tick={{fill: 'rgba(255,255,255,0.5)'}} axisLine={false} tickLine={false} tickFormatter={(value) => `${value/1000}k`} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'rgba(20, 25, 40, 0.8)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', backdropFilter: 'blur(8px)' }}
-                  itemStyle={{ color: '#fff' }}
-                />
-                <Area type="monotone" dataKey="thu" stroke="#4ade80" strokeWidth={3} fillOpacity={1} fill="url(#colorThu)" />
-                <Area type="monotone" dataKey="chi" stroke="#f87171" strokeWidth={3} fillOpacity={1} fill="url(#colorChi)" />
-              </AreaChart>
-            </ResponsiveContainer>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <TiltCard>
+          <div className="mb-6 flex items-center gap-2">
+            <Landmark className="h-5 w-5 text-orange-300" />
+            <h2 className="text-2xl font-semibold text-white/90">Ghi nhận giao dịch quỹ</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <select value={form.entryType} onChange={(event) => setForm((current) => ({ ...current, entryType: event.target.value as typeof current.entryType }))} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-orange-400 focus:outline-none">
+                <option value="contribution">Đóng quỹ</option>
+                <option value="expense">Trừ quỹ</option>
+                <option value="adjustment">Điều chỉnh số dư</option>
+              </select>
+              <input type="number" value={form.amount} onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))} placeholder="Số tiền (VNĐ)" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-orange-400 focus:outline-none" />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <input value={form.person} onChange={(event) => setForm((current) => ({ ...current, person: event.target.value }))} placeholder="Người đóng / người ghi nhận" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-orange-400 focus:outline-none" />
+              <input type="datetime-local" value={form.entryAt} onChange={(event) => setForm((current) => ({ ...current, entryAt: event.target.value }))} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-orange-400 focus:outline-none [color-scheme:dark]" />
+            </div>
+
+            <textarea value={form.reason} onChange={(event) => setForm((current) => ({ ...current, reason: event.target.value }))} rows={4} placeholder="Lý do, ví dụ: Nam đóng quỹ tháng 3 / Chi ăn tối kỷ niệm / Điều chỉnh đối chiếu cuối tuần" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-orange-400 focus:outline-none" />
+
+            <button onClick={() => void handleSubmit()} disabled={isSaving} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-5 py-3 font-semibold text-white shadow-lg shadow-orange-500/30 disabled:opacity-60">
+              <Plus className="h-4 w-4" />
+              {isSaving ? 'Đang lưu...' : 'Lưu giao dịch'}
+            </button>
           </div>
         </TiltCard>
 
         <TiltCard>
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <Target className="w-5 h-5 text-blue-400" />
-            Mục tiêu
-          </h2>
-          
-          <div className="space-y-6">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-medium text-white/90">Du lịch Đà Lạt</span>
-                <span className="text-blue-400 font-bold">65%</span>
-              </div>
-              <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: '65%' }}
-                  transition={{ duration: 1, delay: 0.5 }}
-                  className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full"
-                />
-              </div>
-              <p className="text-xs text-white/50 mt-2 text-right">13tr / 20tr</p>
-            </div>
+          <h2 className="mb-6 text-2xl font-semibold text-white/90">Sổ quỹ</h2>
+          {!entries.length ? (
+            <div className="rounded-2xl border border-dashed border-white/10 px-4 py-10 text-center text-white/55">Chưa có giao dịch quỹ nào.</div>
+          ) : (
+            <div className="space-y-4">
+              {entries.map((entry) => {
+                const isContribution = entry.entry_type === 'contribution';
+                const isExpense = entry.entry_type === 'expense';
+                return (
+                  <div key={entry.id} className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 md:flex-row md:items-start md:justify-between">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${isContribution ? 'bg-green-500/15 text-green-300' : isExpense ? 'bg-red-500/15 text-red-300' : 'bg-white/10 text-white/70'}`}>
+                          {isContribution ? 'Đóng quỹ' : isExpense ? 'Trừ quỹ' : 'Điều chỉnh'}
+                        </span>
+                        {entry.source === 'date_plan_activity' ? <span className="rounded-full bg-blue-500/15 px-3 py-1 text-xs font-semibold text-blue-200">Tự động từ hoạt động</span> : null}
+                      </div>
+                      <p className="font-medium text-white/90">{entry.reason}</p>
+                      <p className="text-sm text-white/50">
+                        {entry.person ? `${entry.person} • ` : ''}
+                        {new Date(entry.entry_at).toLocaleString('vi-VN')}
+                      </p>
+                    </div>
 
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-medium text-white/90">Mua PS5</span>
-                <span className="text-purple-400 font-bold">30%</span>
-              </div>
-              <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: '30%' }}
-                  transition={{ duration: 1, delay: 0.7 }}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full"
-                />
-              </div>
-              <p className="text-xs text-white/50 mt-2 text-right">4.5tr / 15tr</p>
+                    <div className="flex items-center gap-3">
+                      <div className={`text-right text-lg font-bold ${isContribution ? 'text-green-300' : isExpense ? 'text-red-300' : 'text-orange-300'}`}>
+                        {isContribution ? '+' : isExpense ? '-' : '±'}{Number(entry.amount).toLocaleString('vi-VN')} đ
+                      </div>
+                      <button onClick={() => void handleDelete(entry.id)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white">
+                        Xóa
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
-
-          <button className="w-full mt-8 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 transition-colors font-medium flex items-center justify-center gap-2">
-            + Thêm mục tiêu
-          </button>
+          )}
         </TiltCard>
       </div>
     </div>
