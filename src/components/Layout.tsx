@@ -5,7 +5,6 @@ import { cn } from '../lib/utils';
 import { navigationItems } from '../app/routes';
 import MusicPlayer from './MusicPlayer';
 import ParticlesBackground from './ParticlesBackground';
-import SupabaseStatus from './SupabaseStatus';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -58,10 +57,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </NavLink>
           ))}
         </nav>
-
-        <div className="w-full">
-          <SupabaseStatus />
-        </div>
       </motion.aside>
 
       {/* Main Content */}
