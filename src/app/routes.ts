@@ -1,4 +1,4 @@
-import { lazy, type LazyExoticComponent, type ComponentType } from 'react';
+﻿import { lazy, type LazyExoticComponent, type ComponentType } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
   CalendarHeart,

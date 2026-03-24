@@ -22,12 +22,12 @@ type SilverPayment = {
 };
 
 const defaultContract = {
-  title: 'Há»£p Ä‘á»“ng báº£o máº«u',
+  title: 'Hợp đồng bảo mẫu',
   monthlySilverSalary: '0.5',
   bonusSilver: '0.1',
-  paymentCycle: 'Thanh toÃ¡n vÃ o ngÃ y 25 háº±ng thÃ¡ng',
+  paymentCycle: 'Thanh toán vào ngày 25 hằng tháng',
   content:
-    'Äiá»u 1. BÃªn B chá»‹u trÃ¡ch nhiá»‡m chÄƒm sÃ³c, nháº¯c nhá»Ÿ vÃ  Ä‘á»“ng hÃ nh cÃ¹ng BÃªn A má»—i ngÃ y.\n\nÄiá»u 2. LÆ°Æ¡ng cÆ¡ báº£n Ä‘Æ°á»£c chi tráº£ báº±ng lÆ°á»£ng báº¡c theo thá»a thuáº­n giá»¯a hai bÃªn.\n\nÄiá»u 3. ThÆ°á»Ÿng hoáº·c phá»¥ cáº¥p cÃ³ thá»ƒ Ä‘Æ°á»£c cá»™ng thÃªm báº±ng lÆ°á»£ng báº¡c khi hoÃ n thÃ nh tá»‘t nhiá»‡m vá»¥.\n\nÄiá»u 4. Hai bÃªn cÃ³ quyá»n tá»± bá»• sung Ä‘iá»u khoáº£n chi tiáº¿t vÃ o Ä‘Ã¢y.',
+    'Điều 1. Bên B chịu trách nhiệm chăm sóc, nhắc nhở và đồng hành cùng Bên A mỗi ngày.\n\nĐiều 2. Lương cơ bản được chi trả bằng lượng bạc theo thỏa thuận giữa hai bên.\n\nĐiều 3. Thưởng hoặc phụ cấp có thể được cộng thêm bằng lượng bạc khi hoàn thành tốt nhiệm vụ.\n\nĐiều 4. Hai bên có quyền tự bổ sung điều khoản chi tiết vào đây.',
 };
 
 const createDefaultPaymentForm = () => ({
@@ -59,9 +59,7 @@ export default function NannyContract() {
     const [documentResult, paymentResult] = await Promise.all([
       supabase
         .from('contract_documents')
-        .select(
-          'id, title, content, monthly_silver_salary, bonus_silver, payment_cycle, updated_at',
-        )
+        .select('id, title, content, monthly_silver_salary, bonus_silver, payment_cycle, updated_at')
         .order('updated_at', { ascending: false })
         .limit(1),
       supabase
@@ -126,7 +124,7 @@ export default function NannyContract() {
       if (updateError) {
         setError(updateError.message);
       } else {
-        showSavedMessage('ÄÃ£ lÆ°u há»£p Ä‘á»“ng vÃ o kho dữ liệu.');
+        showSavedMessage('Đã lưu hợp đồng thành công.');
       }
     } else {
       const { data, error: insertError } = await supabase
@@ -139,7 +137,7 @@ export default function NannyContract() {
         setError(insertError.message);
       } else if (data) {
         setDocumentId((data as { id: string }).id);
-        showSavedMessage('ÄÃ£ táº¡o vÃ  lÆ°u há»£p Ä‘á»“ng vÃ o kho dữ liệu.');
+        showSavedMessage('Đã tạo và lưu hợp đồng thành công.');
       }
     }
 
@@ -148,7 +146,7 @@ export default function NannyContract() {
 
   const handleAddPayment = async () => {
     if (!paymentForm.amount || Number(paymentForm.amount) <= 0) {
-      setError('HÃ£y nháº­p sá»‘ lÆ°á»£ng báº¡c há»£p lá»‡.');
+      setError('Hãy nhập số lượng bạc hợp lệ.');
       return;
     }
 
@@ -157,7 +155,7 @@ export default function NannyContract() {
 
     const payload = {
       amount: Number(paymentForm.amount),
-      reason: paymentForm.reason.trim() || 'Thanh toÃ¡n lÆ°á»£ng báº¡c Ä‘á»‹nh ká»³',
+      reason: paymentForm.reason.trim() || 'Thanh toán lượng bạc định kỳ',
       paid_at: new Date(paymentForm.paidAt).toISOString(),
     };
 
@@ -172,7 +170,7 @@ export default function NannyContract() {
     } else if (data) {
       setPayments((current) => [data as SilverPayment, ...current]);
       setPaymentForm(createDefaultPaymentForm());
-      showSavedMessage('ÄÃ£ lÆ°u láº§n tráº£ lÆ°Æ¡ng báº¡c vÃ o kho dữ liệu.');
+      showSavedMessage('Đã ghi nhận lần chi trả mới.');
     }
 
     setIsSavingPayment(false);
@@ -183,100 +181,51 @@ export default function NannyContract() {
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <h1 className="mb-2 flex items-center gap-3 text-4xl font-bold tracking-tight">
-            Há»£p Ä‘á»“ng báº£o máº«u
+            Hợp đồng bảo mẫu
             <FileSignature className="h-8 w-8 text-amber-400" />
           </h1>
           <p className="text-lg text-white/60">
-            Há»£p Ä‘á»“ng vÃ  lá»‹ch sá»­ tráº£ lÆ°Æ¡ng báº±ng lÆ°á»£ng báº¡c Ä‘á»u Ä‘Æ°á»£c lÆ°u tháº­t trong kho dữ liệu.
+            Quản lý hợp đồng và lịch sử chi trả bằng lượng bạc trong cùng một nơi.
           </p>
         </motion.div>
 
-        <button
-          type="button"
-          onClick={() => void handleSaveContract()}
-          disabled={isSavingContract}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 px-6 py-3 font-semibold text-black shadow-lg shadow-amber-500/30 disabled:opacity-60"
-        >
-          {isSavingContract ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Save className="h-5 w-5" />
-          )}
-          LÆ°u há»£p Ä‘á»“ng
+        <button type="button" onClick={() => void handleSaveContract()} disabled={isSavingContract} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 px-6 py-3 font-semibold text-black shadow-lg shadow-amber-500/30 disabled:opacity-60">
+          {isSavingContract ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+          Lưu hợp đồng
         </button>
       </header>
 
-      {savedMessage ? (
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-          {savedMessage}
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-          {error}
-        </div>
-      ) : null}
+      {savedMessage ? <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">{savedMessage}</div> : null}
+      {error ? <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <TiltCard glow={false} className="bg-[#fdfbf7] text-[#3a2a22]">
           <div className="rounded-2xl border-4 border-double border-[#3a2a22]/15 p-6 md:p-8">
             <div className="border-b border-[#3a2a22]/15 pb-6 text-center">
-              <h2 className="text-3xl font-semibold uppercase tracking-[0.22em] text-[#5c4033]">
-                {contract.title}
-              </h2>
-              <p className="mt-3 text-sm text-[#3a2a22]/60">
-                Äiá»u khoáº£n trá»ng tÃ¢m: lÆ°Æ¡ng cÆ¡ báº£n vÃ  thÆ°á»Ÿng Ä‘á»u cÃ³ thá»ƒ tÃ­nh báº±ng lÆ°á»£ng báº¡c.
-              </p>
+              <h2 className="text-3xl font-semibold uppercase tracking-[0.22em] text-[#5c4033]">{contract.title}</h2>
+              <p className="mt-3 text-sm text-[#3a2a22]/60">Các điều khoản chính về lương và thưởng đều được trình bày rõ ràng ở đây.</p>
             </div>
 
             <div className="mt-6 grid gap-4 md:grid-cols-3">
               <label className="text-sm">
-                <span className="mb-2 block font-medium text-[#3a2a22]/70">LÆ°Æ¡ng cÆ¡ báº£n</span>
+                <span className="mb-2 block font-medium text-[#3a2a22]/70">Lương cơ bản</span>
                 <div className="rounded-xl border border-[#3a2a22]/10 bg-white px-4 py-3">
-                  <input
-                    value={contract.monthlySilverSalary}
-                    onChange={(event) =>
-                      setContract((current) => ({
-                        ...current,
-                        monthlySilverSalary: event.target.value,
-                      }))
-                    }
-                    className="w-full bg-transparent font-semibold text-[#3a2a22] outline-none"
-                  />
-                  <p className="mt-2 text-xs text-[#3a2a22]/50">ÄÆ¡n vá»‹: lÆ°á»£ng báº¡c / ká»³</p>
+                  <input value={contract.monthlySilverSalary} onChange={(event) => setContract((current) => ({ ...current, monthlySilverSalary: event.target.value }))} className="w-full bg-transparent font-semibold text-[#3a2a22] outline-none" />
+                  <p className="mt-2 text-xs text-[#3a2a22]/50">Đơn vị: lượng bạc / kỳ</p>
                 </div>
               </label>
 
               <label className="text-sm">
-                <span className="mb-2 block font-medium text-[#3a2a22]/70">ThÆ°á»Ÿng thÃªm</span>
+                <span className="mb-2 block font-medium text-[#3a2a22]/70">Thưởng thêm</span>
                 <div className="rounded-xl border border-[#3a2a22]/10 bg-white px-4 py-3">
-                  <input
-                    value={contract.bonusSilver}
-                    onChange={(event) =>
-                      setContract((current) => ({
-                        ...current,
-                        bonusSilver: event.target.value,
-                      }))
-                    }
-                    className="w-full bg-transparent font-semibold text-[#3a2a22] outline-none"
-                  />
-                  <p className="mt-2 text-xs text-[#3a2a22]/50">ÄÆ¡n vá»‹: lÆ°á»£ng báº¡c / láº§n</p>
+                  <input value={contract.bonusSilver} onChange={(event) => setContract((current) => ({ ...current, bonusSilver: event.target.value }))} className="w-full bg-transparent font-semibold text-[#3a2a22] outline-none" />
+                  <p className="mt-2 text-xs text-[#3a2a22]/50">Đơn vị: lượng bạc / lần</p>
                 </div>
               </label>
 
               <label className="text-sm">
-                <span className="mb-2 block font-medium text-[#3a2a22]/70">Chu ká»³ chi tráº£</span>
-                <input
-                  value={contract.paymentCycle}
-                  onChange={(event) =>
-                    setContract((current) => ({
-                      ...current,
-                      paymentCycle: event.target.value,
-                    }))
-                  }
-                  className="w-full rounded-xl border border-[#3a2a22]/10 bg-white px-4 py-3 text-[#3a2a22] outline-none"
-                />
+                <span className="mb-2 block font-medium text-[#3a2a22]/70">Chu kỳ chi trả</span>
+                <input value={contract.paymentCycle} onChange={(event) => setContract((current) => ({ ...current, paymentCycle: event.target.value }))} className="w-full rounded-xl border border-[#3a2a22]/10 bg-white px-4 py-3 text-[#3a2a22] outline-none" />
               </label>
             </div>
 
@@ -284,39 +233,20 @@ export default function NannyContract() {
               <div className="flex items-start gap-3">
                 <ShieldCheck className="mt-0.5 h-5 w-5 text-amber-700" />
                 <div>
-                  <p className="font-semibold text-[#5c4033]">Má»¥c lÆ°Æ¡ng báº±ng lÆ°á»£ng báº¡c</p>
+                  <p className="font-semibold text-[#5c4033]">Thỏa thuận chi trả bằng lượng bạc</p>
                   <p className="mt-2 text-sm leading-6 text-[#5c4033]/75">
-                    LÆ°Æ¡ng cÆ¡ báº£n hiá»‡n táº¡i lÃ  {contract.monthlySilverSalary} lÆ°á»£ng báº¡c má»—i ká»³,
-                    thÆ°á»Ÿng thÃªm {contract.bonusSilver} lÆ°á»£ng báº¡c theo tá»«ng thÃ nh tÃ­ch hoáº·c há»—
-                    trá»£ Ä‘áº·c biá»‡t.
+                    Lương cơ bản hiện tại là {contract.monthlySilverSalary} lượng bạc mỗi kỳ, thưởng thêm {contract.bonusSilver} lượng bạc theo từng thành tích hoặc hỗ trợ đặc biệt.
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="mt-6">
-              <label className="mb-2 block font-medium text-[#3a2a22]/70">
-                TiÃªu Ä‘á» há»£p Ä‘á»“ng
-              </label>
-              <input
-                value={contract.title}
-                onChange={(event) =>
-                  setContract((current) => ({ ...current, title: event.target.value }))
-                }
-                className="mb-4 w-full rounded-xl border border-[#3a2a22]/10 bg-white px-4 py-3 text-[#3a2a22] outline-none"
-              />
+              <label className="mb-2 block font-medium text-[#3a2a22]/70">Tiêu đề hợp đồng</label>
+              <input value={contract.title} onChange={(event) => setContract((current) => ({ ...current, title: event.target.value }))} className="mb-4 w-full rounded-xl border border-[#3a2a22]/10 bg-white px-4 py-3 text-[#3a2a22] outline-none" />
 
-              <label className="mb-2 block font-medium text-[#3a2a22]/70">
-                Ná»™i dung há»£p Ä‘á»“ng
-              </label>
-              <textarea
-                value={contract.content}
-                onChange={(event) =>
-                  setContract((current) => ({ ...current, content: event.target.value }))
-                }
-                rows={16}
-                className="w-full rounded-2xl border border-[#3a2a22]/10 bg-white px-4 py-4 font-serif text-[17px] leading-8 text-[#3a2a22] outline-none"
-              />
+              <label className="mb-2 block font-medium text-[#3a2a22]/70">Nội dung hợp đồng</label>
+              <textarea value={contract.content} onChange={(event) => setContract((current) => ({ ...current, content: event.target.value }))} rows={16} className="w-full rounded-2xl border border-[#3a2a22]/10 bg-white px-4 py-4 font-serif text-[17px] leading-8 text-[#3a2a22] outline-none" />
             </div>
           </div>
         </TiltCard>
@@ -328,93 +258,43 @@ export default function NannyContract() {
                 <Coins className="h-6 w-6 text-amber-300" />
               </div>
               <div>
-                <p className="text-sm uppercase tracking-[0.22em] text-amber-100/60">
-                  ÄÃ£ chi tráº£
-                </p>
-                <p className="mt-2 text-3xl font-bold text-amber-300">
-                  {totalSilverPaid.toLocaleString('vi-VN')} lÆ°á»£ng báº¡c
-                </p>
+                <p className="text-sm uppercase tracking-[0.22em] text-amber-100/60">Đã chi trả</p>
+                <p className="mt-2 text-3xl font-bold text-amber-300">{totalSilverPaid.toLocaleString('vi-VN')} lượng bạc</p>
               </div>
             </div>
           </TiltCard>
 
           <TiltCard className="bg-white/5">
-            <h2 className="text-2xl font-bold text-white">Ghi nháº­n tráº£ lÆ°Æ¡ng báº±ng báº¡c</h2>
-            <p className="mt-2 text-sm text-white/60">
-              DÃ¹ng khi thanh toÃ¡n lÆ°Æ¡ng cÆ¡ báº£n, thÆ°á»Ÿng hoáº·c há»— trá»£ phÃ¡t sinh.
-            </p>
+            <h2 className="text-2xl font-bold text-white">Ghi nhận lần chi trả mới</h2>
+            <p className="mt-2 text-sm text-white/60">Dùng khi thanh toán lương cơ bản, thưởng hoặc hỗ trợ phát sinh.</p>
 
             <div className="mt-5 space-y-4">
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={paymentForm.amount}
-                onChange={(event) =>
-                  setPaymentForm((current) => ({ ...current, amount: event.target.value }))
-                }
-                placeholder="VÃ­ dá»¥: 0.5 lÆ°á»£ng báº¡c"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-amber-400 focus:outline-none"
-              />
-              <input
-                value={paymentForm.reason}
-                onChange={(event) =>
-                  setPaymentForm((current) => ({ ...current, reason: event.target.value }))
-                }
-                placeholder="LÃ½ do chi tráº£"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-amber-400 focus:outline-none"
-              />
-              <input
-                type="datetime-local"
-                value={paymentForm.paidAt}
-                onChange={(event) =>
-                  setPaymentForm((current) => ({ ...current, paidAt: event.target.value }))
-                }
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-amber-400 focus:outline-none [color-scheme:dark]"
-              />
+              <input type="number" min="0" step="0.01" value={paymentForm.amount} onChange={(event) => setPaymentForm((current) => ({ ...current, amount: event.target.value }))} placeholder="Ví dụ: 0.5 lượng bạc" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-amber-400 focus:outline-none" />
+              <input value={paymentForm.reason} onChange={(event) => setPaymentForm((current) => ({ ...current, reason: event.target.value }))} placeholder="Lý do chi trả" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-amber-400 focus:outline-none" />
+              <input type="datetime-local" value={paymentForm.paidAt} onChange={(event) => setPaymentForm((current) => ({ ...current, paidAt: event.target.value }))} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-amber-400 focus:outline-none [color-scheme:dark]" />
 
-              <button
-                type="button"
-                onClick={() => void handleAddPayment()}
-                disabled={isSavingPayment}
-                className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 px-5 py-3 font-semibold text-black disabled:opacity-60"
-              >
-                {isSavingPayment ? 'Äang lÆ°u láº§n chi tráº£...' : 'ThÃªm láº§n tráº£ lÆ°Æ¡ng báº±ng báº¡c'}
+              <button type="button" onClick={() => void handleAddPayment()} disabled={isSavingPayment} className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 px-5 py-3 font-semibold text-black disabled:opacity-60">
+                {isSavingPayment ? 'Đang lưu chi trả...' : 'Thêm lần chi trả'}
               </button>
             </div>
           </TiltCard>
 
           <TiltCard className="bg-white/5">
-            <h2 className="text-2xl font-bold text-white">Lá»‹ch sá»­ chi tráº£</h2>
+            <h2 className="text-2xl font-bold text-white">Lịch sử chi trả</h2>
 
-            {isLoading ? (
-              <div className="mt-5 rounded-2xl border border-white/10 bg-black/10 px-4 py-8 text-center text-white/55">
-                Äang táº£i dá»¯ liá»‡u há»£p Ä‘á»“ng...
-              </div>
-            ) : null}
+            {isLoading ? <div className="mt-5 rounded-2xl border border-white/10 bg-black/10 px-4 py-8 text-center text-white/55">Đang tải thông tin hợp đồng...</div> : null}
 
             <div className="mt-5 space-y-3">
-              {!isLoading && !payments.length ? (
-                <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-8 text-center text-white/55">
-                  ChÆ°a cÃ³ láº§n chi tráº£ nÃ o Ä‘Æ°á»£c ghi nháº­n.
-                </div>
-              ) : null}
+              {!isLoading && !payments.length ? <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-8 text-center text-white/55">Chưa có lần chi trả nào được ghi nhận.</div> : null}
 
               {payments.map((payment) => (
-                <div
-                  key={payment.id}
-                  className="rounded-2xl border border-white/10 bg-black/10 px-4 py-4"
-                >
+                <div key={payment.id} className="rounded-2xl border border-white/10 bg-black/10 px-4 py-4">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="font-semibold text-white">{payment.reason}</p>
-                      <p className="mt-1 text-sm text-white/50">
-                        {new Date(payment.paid_at).toLocaleString('vi-VN')}
-                      </p>
+                      <p className="mt-1 text-sm text-white/50">{new Date(payment.paid_at).toLocaleString('vi-VN')}</p>
                     </div>
-                    <p className="font-bold text-amber-300">
-                      {Number(payment.amount).toLocaleString('vi-VN')} lÆ°á»£ng báº¡c
-                    </p>
+                    <p className="font-bold text-amber-300">{Number(payment.amount).toLocaleString('vi-VN')} lượng bạc</p>
                   </div>
                 </div>
               ))}
@@ -425,4 +305,3 @@ export default function NannyContract() {
     </div>
   );
 }
-
