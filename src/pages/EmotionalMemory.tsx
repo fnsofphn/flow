@@ -167,7 +167,7 @@ export default function EmotionalMemory() {
                           </button>
                         </div>
 
-                        <p className="line-clamp-4 text-white/80">{note.content}</p>
+                        <div className="min-h-[64px] rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-relaxed text-white/70">{isReady || note.is_opened ? <p className="line-clamp-3">{note.content}</p> : <p>Nội dung sẽ được giữ kín cho đến đúng thời điểm mở.</p>}</div>
                       </div>
 
                       <div className="space-y-3">
@@ -276,3 +276,4 @@ export default function EmotionalMemory() {
     </div>
   );
 }
+
