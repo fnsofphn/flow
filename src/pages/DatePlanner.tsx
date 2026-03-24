@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { CalendarHeart, Clock, Heart, Plus, RefreshCcw, X } from 'lucide-react';
 import TiltCard from '../components/TiltCard';
@@ -89,7 +89,7 @@ export default function DatePlanner() {
       .filter((activity) => activity.name);
 
     if (!newTitle.trim() || !newDatetime || !cleanActivities.length) {
-      setError('Hay nhap ten ke hoach, thoi gian va it nhat mot hoat dong.');
+      setError('Hãy nhập tên kế hoạch, thời gian và ít nhất một hoạt động.');
       return;
     }
 
@@ -107,7 +107,7 @@ export default function DatePlanner() {
 
     if (planError || !insertedPlan) {
       setIsSaving(false);
-      setError(planError?.message ?? 'Khong the tao ke hoach.');
+      setError(planError?.message ?? 'Không thể tạo kế hoạch.');
       return;
     }
 
@@ -148,20 +148,20 @@ export default function DatePlanner() {
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <h1 className="mb-2 flex items-center gap-3 text-4xl font-bold tracking-tight">
-            He thong hen ho
+            Kế hoạch hẹn hò
             <CalendarHeart className="h-8 w-8 text-pink-500" />
           </h1>
-          <p className="text-lg text-white/60">Lap lich hen ho va luu tung hoat dong vao Supabase.</p>
+          <p className="text-lg text-white/60">Lên lịch hẹn hò và lưu từng hoạt động một cách rõ ràng.</p>
         </motion.div>
 
         <div className="flex flex-wrap gap-3">
           <button onClick={() => void loadPlans()} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/10">
             <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Tai lai
+            Tải lại
           </button>
           <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setIsCreating(true)} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-6 py-3 font-medium text-white shadow-lg shadow-pink-500/30">
             <Plus className="h-5 w-5" />
-            Tao cuoc hen
+            Tạo cuộc hẹn
           </motion.button>
         </div>
       </header>
@@ -169,7 +169,7 @@ export default function DatePlanner() {
       {error ? <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
 
       {isLoading ? (
-        <TiltCard className="text-center text-white/60">Dang tai lich hen ho tu Supabase...</TiltCard>
+        <TiltCard className="text-center text-white/60">Đang tải kế hoạch hẹn hò...</TiltCard>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <AnimatePresence>
@@ -192,7 +192,7 @@ export default function DatePlanner() {
                       </div>
 
                       <button onClick={() => void handleDelete(plan.id)} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white">
-                        Xoa
+                        Xóa
                       </button>
                     </div>
 
@@ -203,15 +203,15 @@ export default function DatePlanner() {
                             <div className="h-2 w-2 rounded-full bg-pink-500" />
                             {activity.name}
                           </span>
-                          <span className="font-medium text-orange-300">{Number(activity.cost || 0).toLocaleString('vi-VN')}d</span>
+                          <span className="font-medium text-orange-300">{Number(activity.cost || 0).toLocaleString('vi-VN')}đ</span>
                         </div>
                       ))}
                     </div>
 
                     <div className="flex items-center justify-between border-t border-white/10 pt-4">
-                      <span className="text-sm font-semibold uppercase tracking-wider text-white/50">Tong chi phi du kien</span>
+                      <span className="text-sm font-semibold uppercase tracking-wider text-white/50">Tổng chi phí dự kiến</span>
                       <span className="bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-2xl font-bold text-transparent">
-                        {totalCost.toLocaleString('vi-VN')}d
+                        {totalCost.toLocaleString('vi-VN')}đ
                       </span>
                     </div>
                   </TiltCard>
@@ -220,7 +220,7 @@ export default function DatePlanner() {
             })}
           </AnimatePresence>
 
-          {!plans.length ? <TiltCard className="text-center text-white/60">Chua co lich hen ho nao trong Supabase.</TiltCard> : null}
+          {!plans.length ? <TiltCard className="text-center text-white/60">Chưa có kế hoạch hẹn hò nào.</TiltCard> : null}
         </div>
       )}
 
@@ -233,7 +233,7 @@ export default function DatePlanner() {
                 <div className="mb-8 flex items-center justify-between">
                   <h2 className="flex items-center gap-2 text-2xl font-bold">
                     <CalendarHeart className="h-6 w-6 text-pink-500" />
-                    Len lich hen ho moi
+                    Lên lịch hẹn hò mới
                   </h2>
                   <button onClick={() => setIsCreating(false)} className="rounded-full bg-white/5 p-2 text-white/50 hover:text-white">
                     <X className="h-5 w-5" />
@@ -242,47 +242,46 @@ export default function DatePlanner() {
 
                 <div className="space-y-6">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-white/70">Ten cuoc hen</label>
-                    <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="VD: Ky niem 2 nam..." className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-500 focus:outline-none transition-colors" />
+                    <label className="mb-2 block text-sm font-medium text-white/70">Tên cuộc hẹn</label>
+                    <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Ví dụ: Kỷ niệm 2 năm..." className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-500 focus:outline-none transition-colors" />
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-white/70">Thoi gian</label>
+                    <label className="mb-2 block text-sm font-medium text-white/70">Thời gian</label>
                     <input type="datetime-local" value={newDatetime} onChange={(e) => setNewDatetime(e.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-pink-500 focus:outline-none transition-colors [color-scheme:dark]" />
                   </div>
 
                   <div>
                     <div className="mb-2 flex items-center justify-between">
-                      <label className="block text-sm font-medium text-white/70">Danh sach hoat dong</label>
+                      <label className="block text-sm font-medium text-white/70">Danh sách hoạt động</label>
                       <button onClick={handleAddActivity} className="flex items-center gap-1 text-sm text-pink-400 hover:text-pink-300">
-                        <Plus className="h-4 w-4" /> Them
+                        <Plus className="h-4 w-4" /> Thêm
                       </button>
                     </div>
 
                     <div className="space-y-3">
                       {newActivities.map((activity) => (
-                        <div key={activity.id} className="flex items-center gap-3">
-                          <input type="text" value={activity.name} onChange={(e) => handleActivityChange(activity.id, 'name', e.target.value)} placeholder="Ten hoat dong" className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-500 focus:outline-none" />
-                          <input type="number" value={activity.cost || ''} onChange={(e) => handleActivityChange(activity.id, 'cost', parseInt(e.target.value, 10) || 0)} placeholder="Chi phi" className="w-32 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-500 focus:outline-none" />
-                          <button onClick={() => handleRemoveActivity(activity.id)} className="rounded-xl border border-white/10 bg-white/5 p-3 text-white/30 hover:text-red-400">
-                            <X className="h-5 w-5" />
+                        <div key={activity.id} className="grid gap-3 md:grid-cols-[1fr_140px_auto]">
+                          <input type="text" value={activity.name} onChange={(e) => handleActivityChange(activity.id, 'name', e.target.value)} placeholder="Tên hoạt động" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-500 focus:outline-none" />
+                          <input type="number" value={activity.cost} onChange={(e) => handleActivityChange(activity.id, 'cost', Number(e.target.value || 0))} placeholder="Chi phí" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-500 focus:outline-none" />
+                          <button onClick={() => handleRemoveActivity(activity.id)} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white/60 transition-colors hover:bg-white/10 hover:text-white">
+                            Xóa
                           </button>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-white/10 pt-6">
-                    <div>
-                      <p className="text-sm text-white/50">Tong du kien</p>
-                      <p className="text-2xl font-bold text-orange-400">
-                        {newActivities.reduce((sum, activity) => sum + (activity.cost || 0), 0).toLocaleString('vi-VN')}d
-                      </p>
-                    </div>
-                    <button onClick={() => void handleSave()} disabled={isSaving} className="rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 px-8 py-3 font-bold text-white shadow-lg shadow-pink-500/30 transition-transform hover:scale-105 disabled:opacity-60">
-                      {isSaving ? 'Dang luu...' : 'Luu ke hoach'}
-                    </button>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                    <p className="text-sm text-white/50">Tổng dự kiến</p>
+                    <p className="mt-2 text-2xl font-bold text-orange-300">
+                      {newActivities.reduce((sum, activity) => sum + Number(activity.cost || 0), 0).toLocaleString('vi-VN')}đ
+                    </p>
                   </div>
+
+                  <button onClick={() => void handleSave()} disabled={isSaving} className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 py-4 font-bold text-white shadow-lg shadow-pink-500/30 disabled:opacity-60">
+                    {isSaving ? 'Đang lưu kế hoạch...' : 'Lưu kế hoạch'}
+                  </button>
                 </div>
               </div>
             </motion.div>

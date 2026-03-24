@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Moon, Sparkles, Loader2, Brain, History } from 'lucide-react';
 import TiltCard from '../components/TiltCard';
@@ -42,7 +42,7 @@ export default function DreamAI() {
   const handleAnalyze = async () => {
     if (!dream.trim()) return;
     if (!ai) {
-      setError('Thiếu VITE_GEMINI_API_KEY nên chưa thể phân tích giấc mơ.');
+      setError('Thiáº¿u VITE_GEMINI_API_KEY nÃªn chÆ°a thá»ƒ phÃ¢n tÃ­ch giáº¥c mÆ¡.');
       return;
     }
 
@@ -53,13 +53,13 @@ export default function DreamAI() {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Phân tích giấc mơ sau đây của tôi: "${dream}".
-        Hãy phân tích theo các khía cạnh:
-        1. Ý nghĩa tổng quan
-        2. Cảm xúc ẩn giấu
-        3. Biểu tượng chính
-        4. Lời khuyên hoặc gợi ý cho ngày mới.
-        Trả lời bằng tiếng Việt, ngắn gọn, rõ ràng và tích cực.`,
+        contents: `PhÃ¢n tÃ­ch giáº¥c mÆ¡ sau Ä‘Ã¢y cá»§a tÃ´i: "${dream}".
+        HÃ£y phÃ¢n tÃ­ch theo cÃ¡c khÃ­a cáº¡nh:
+        1. Ã nghÄ©a tá»•ng quan
+        2. Cáº£m xÃºc áº©n giáº¥u
+        3. Biá»ƒu tÆ°á»£ng chÃ­nh
+        4. Lá»i khuyÃªn hoáº·c gá»£i Ã½ cho ngÃ y má»›i.
+        Tráº£ lá»i báº±ng tiáº¿ng Viá»‡t, ngáº¯n gá»n, rÃµ rÃ ng vÃ  tÃ­ch cá»±c.`,
         config: {
           temperature: 0.7,
         },
@@ -86,7 +86,7 @@ export default function DreamAI() {
       setDream('');
     } catch (caughtError) {
       console.error('Error analyzing dream:', caughtError);
-      setError('Xin lỗi, có lỗi xảy ra khi phân tích giấc mơ. Vui lòng thử lại sau.');
+      setError('Xin lá»—i, cÃ³ lá»—i xáº£y ra khi phÃ¢n tÃ­ch giáº¥c mÆ¡. Vui lÃ²ng thá»­ láº¡i sau.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -97,11 +97,11 @@ export default function DreamAI() {
       <header className="flex justify-between items-end">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <h1 className="mb-2 flex items-center gap-3 text-4xl font-bold tracking-tight">
-            Giấc mơ AI
+            Giáº¥c mÆ¡ AI
             <Moon className="h-8 w-8 fill-indigo-400 text-indigo-400" />
           </h1>
           <p className="text-lg text-white/60">
-            Phân tích giấc mơ và lưu toàn bộ lịch sử giải mã vào Supabase.
+            PhÃ¢n tÃ­ch giáº¥c mÆ¡ vÃ  lÆ°u toÃ n bá»™ lá»‹ch sá»­ giáº£i mÃ£ vÃ o kho dữ liệu.
           </p>
         </motion.div>
       </header>
@@ -116,13 +116,13 @@ export default function DreamAI() {
         <TiltCard glow={false} className="border-indigo-500/30 bg-gradient-to-br from-indigo-900/40 to-purple-900/40">
           <div className="mb-6 flex items-center gap-3">
             <Brain className="h-6 w-6 text-indigo-400" />
-            <h2 className="text-2xl font-bold text-white/90">Kể lại giấc mơ</h2>
+            <h2 className="text-2xl font-bold text-white/90">Ká»ƒ láº¡i giáº¥c mÆ¡</h2>
           </div>
 
           <textarea
             value={dream}
             onChange={(event) => setDream(event.target.value)}
-            placeholder="Đêm qua bạn mơ thấy gì? Hãy kể chi tiết nhé..."
+            placeholder="ÄÃªm qua báº¡n mÆ¡ tháº¥y gÃ¬? HÃ£y ká»ƒ chi tiáº¿t nhÃ©..."
             className="mb-6 h-48 w-full resize-none rounded-2xl border border-white/10 bg-white/5 p-4 text-white placeholder:text-white/30 transition-colors focus:border-indigo-500 focus:outline-none"
           />
 
@@ -134,12 +134,12 @@ export default function DreamAI() {
             {isAnalyzing ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Đang giải mã...
+                Äang giáº£i mÃ£...
               </>
             ) : (
               <>
                 <Sparkles className="h-5 w-5" />
-                Phân tích giấc mơ
+                PhÃ¢n tÃ­ch giáº¥c mÆ¡
               </>
             )}
           </button>
@@ -157,7 +157,7 @@ export default function DreamAI() {
               <TiltCard className="h-full border-purple-500/30 bg-gradient-to-br from-purple-900/40 to-pink-900/40">
                 <div className="mb-6 flex items-center gap-3">
                   <Sparkles className="h-6 w-6 text-purple-400" />
-                  <h2 className="text-2xl font-bold text-white/90">Lời giải mã</h2>
+                  <h2 className="text-2xl font-bold text-white/90">Lá»i giáº£i mÃ£</h2>
                 </div>
 
                 <div className="custom-scrollbar max-h-[420px] overflow-y-auto pr-2">
@@ -180,7 +180,7 @@ export default function DreamAI() {
               <TiltCard glow={false} className="flex h-full flex-col items-center justify-center border-2 border-dashed border-white/10 bg-transparent text-center">
                 <Moon className="mb-4 h-16 w-16 text-white/20" />
                 <p className="text-lg text-white/40">
-                  AI đang chờ để lắng nghe giấc mơ của bạn...
+                  AI Ä‘ang chá» Ä‘á»ƒ láº¯ng nghe giáº¥c mÆ¡ cá»§a báº¡n...
                 </p>
               </TiltCard>
             </motion.div>
@@ -191,12 +191,12 @@ export default function DreamAI() {
       <TiltCard className="bg-white/5">
         <div className="mb-6 flex items-center gap-3">
           <History className="h-5 w-5 text-indigo-300" />
-          <h2 className="text-2xl font-bold text-white">Lịch sử giấc mơ đã lưu</h2>
+          <h2 className="text-2xl font-bold text-white">Lá»‹ch sá»­ giáº¥c mÆ¡ Ä‘Ã£ lÆ°u</h2>
         </div>
 
         {!history.length ? (
           <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-8 text-center text-white/55">
-            Chưa có giấc mơ nào được lưu trong Supabase.
+            ChÆ°a cÃ³ giáº¥c mÆ¡ nÃ o Ä‘Æ°á»£c lÆ°u trong kho dữ liệu.
           </div>
         ) : (
           <div className="space-y-4">
@@ -220,3 +220,4 @@ export default function DreamAI() {
     </div>
   );
 }
+

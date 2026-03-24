@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { Coins, FileSignature, Loader2, Save, ShieldCheck } from 'lucide-react';
 import TiltCard from '../components/TiltCard';
@@ -22,12 +22,12 @@ type SilverPayment = {
 };
 
 const defaultContract = {
-  title: 'Hợp đồng bảo mẫu',
+  title: 'Há»£p Ä‘á»“ng báº£o máº«u',
   monthlySilverSalary: '0.5',
   bonusSilver: '0.1',
-  paymentCycle: 'Thanh toán vào ngày 25 hằng tháng',
+  paymentCycle: 'Thanh toÃ¡n vÃ o ngÃ y 25 háº±ng thÃ¡ng',
   content:
-    'Điều 1. Bên B chịu trách nhiệm chăm sóc, nhắc nhở và đồng hành cùng Bên A mỗi ngày.\n\nĐiều 2. Lương cơ bản được chi trả bằng lượng bạc theo thỏa thuận giữa hai bên.\n\nĐiều 3. Thưởng hoặc phụ cấp có thể được cộng thêm bằng lượng bạc khi hoàn thành tốt nhiệm vụ.\n\nĐiều 4. Hai bên có quyền tự bổ sung điều khoản chi tiết vào đây.',
+    'Äiá»u 1. BÃªn B chá»‹u trÃ¡ch nhiá»‡m chÄƒm sÃ³c, nháº¯c nhá»Ÿ vÃ  Ä‘á»“ng hÃ nh cÃ¹ng BÃªn A má»—i ngÃ y.\n\nÄiá»u 2. LÆ°Æ¡ng cÆ¡ báº£n Ä‘Æ°á»£c chi tráº£ báº±ng lÆ°á»£ng báº¡c theo thá»a thuáº­n giá»¯a hai bÃªn.\n\nÄiá»u 3. ThÆ°á»Ÿng hoáº·c phá»¥ cáº¥p cÃ³ thá»ƒ Ä‘Æ°á»£c cá»™ng thÃªm báº±ng lÆ°á»£ng báº¡c khi hoÃ n thÃ nh tá»‘t nhiá»‡m vá»¥.\n\nÄiá»u 4. Hai bÃªn cÃ³ quyá»n tá»± bá»• sung Ä‘iá»u khoáº£n chi tiáº¿t vÃ o Ä‘Ã¢y.',
 };
 
 const createDefaultPaymentForm = () => ({
@@ -126,7 +126,7 @@ export default function NannyContract() {
       if (updateError) {
         setError(updateError.message);
       } else {
-        showSavedMessage('Đã lưu hợp đồng vào Supabase.');
+        showSavedMessage('ÄÃ£ lÆ°u há»£p Ä‘á»“ng vÃ o kho dữ liệu.');
       }
     } else {
       const { data, error: insertError } = await supabase
@@ -139,7 +139,7 @@ export default function NannyContract() {
         setError(insertError.message);
       } else if (data) {
         setDocumentId((data as { id: string }).id);
-        showSavedMessage('Đã tạo và lưu hợp đồng vào Supabase.');
+        showSavedMessage('ÄÃ£ táº¡o vÃ  lÆ°u há»£p Ä‘á»“ng vÃ o kho dữ liệu.');
       }
     }
 
@@ -148,7 +148,7 @@ export default function NannyContract() {
 
   const handleAddPayment = async () => {
     if (!paymentForm.amount || Number(paymentForm.amount) <= 0) {
-      setError('Hãy nhập số lượng bạc hợp lệ.');
+      setError('HÃ£y nháº­p sá»‘ lÆ°á»£ng báº¡c há»£p lá»‡.');
       return;
     }
 
@@ -157,7 +157,7 @@ export default function NannyContract() {
 
     const payload = {
       amount: Number(paymentForm.amount),
-      reason: paymentForm.reason.trim() || 'Thanh toán lượng bạc định kỳ',
+      reason: paymentForm.reason.trim() || 'Thanh toÃ¡n lÆ°á»£ng báº¡c Ä‘á»‹nh ká»³',
       paid_at: new Date(paymentForm.paidAt).toISOString(),
     };
 
@@ -172,7 +172,7 @@ export default function NannyContract() {
     } else if (data) {
       setPayments((current) => [data as SilverPayment, ...current]);
       setPaymentForm(createDefaultPaymentForm());
-      showSavedMessage('Đã lưu lần trả lương bạc vào Supabase.');
+      showSavedMessage('ÄÃ£ lÆ°u láº§n tráº£ lÆ°Æ¡ng báº¡c vÃ o kho dữ liệu.');
     }
 
     setIsSavingPayment(false);
@@ -183,11 +183,11 @@ export default function NannyContract() {
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <h1 className="mb-2 flex items-center gap-3 text-4xl font-bold tracking-tight">
-            Hợp đồng bảo mẫu
+            Há»£p Ä‘á»“ng báº£o máº«u
             <FileSignature className="h-8 w-8 text-amber-400" />
           </h1>
           <p className="text-lg text-white/60">
-            Hợp đồng và lịch sử trả lương bằng lượng bạc đều được lưu thật trong Supabase.
+            Há»£p Ä‘á»“ng vÃ  lá»‹ch sá»­ tráº£ lÆ°Æ¡ng báº±ng lÆ°á»£ng báº¡c Ä‘á»u Ä‘Æ°á»£c lÆ°u tháº­t trong kho dữ liệu.
           </p>
         </motion.div>
 
@@ -202,7 +202,7 @@ export default function NannyContract() {
           ) : (
             <Save className="h-5 w-5" />
           )}
-          Lưu hợp đồng
+          LÆ°u há»£p Ä‘á»“ng
         </button>
       </header>
 
@@ -226,13 +226,13 @@ export default function NannyContract() {
                 {contract.title}
               </h2>
               <p className="mt-3 text-sm text-[#3a2a22]/60">
-                Điều khoản trọng tâm: lương cơ bản và thưởng đều có thể tính bằng lượng bạc.
+                Äiá»u khoáº£n trá»ng tÃ¢m: lÆ°Æ¡ng cÆ¡ báº£n vÃ  thÆ°á»Ÿng Ä‘á»u cÃ³ thá»ƒ tÃ­nh báº±ng lÆ°á»£ng báº¡c.
               </p>
             </div>
 
             <div className="mt-6 grid gap-4 md:grid-cols-3">
               <label className="text-sm">
-                <span className="mb-2 block font-medium text-[#3a2a22]/70">Lương cơ bản</span>
+                <span className="mb-2 block font-medium text-[#3a2a22]/70">LÆ°Æ¡ng cÆ¡ báº£n</span>
                 <div className="rounded-xl border border-[#3a2a22]/10 bg-white px-4 py-3">
                   <input
                     value={contract.monthlySilverSalary}
@@ -244,12 +244,12 @@ export default function NannyContract() {
                     }
                     className="w-full bg-transparent font-semibold text-[#3a2a22] outline-none"
                   />
-                  <p className="mt-2 text-xs text-[#3a2a22]/50">Đơn vị: lượng bạc / kỳ</p>
+                  <p className="mt-2 text-xs text-[#3a2a22]/50">ÄÆ¡n vá»‹: lÆ°á»£ng báº¡c / ká»³</p>
                 </div>
               </label>
 
               <label className="text-sm">
-                <span className="mb-2 block font-medium text-[#3a2a22]/70">Thưởng thêm</span>
+                <span className="mb-2 block font-medium text-[#3a2a22]/70">ThÆ°á»Ÿng thÃªm</span>
                 <div className="rounded-xl border border-[#3a2a22]/10 bg-white px-4 py-3">
                   <input
                     value={contract.bonusSilver}
@@ -261,12 +261,12 @@ export default function NannyContract() {
                     }
                     className="w-full bg-transparent font-semibold text-[#3a2a22] outline-none"
                   />
-                  <p className="mt-2 text-xs text-[#3a2a22]/50">Đơn vị: lượng bạc / lần</p>
+                  <p className="mt-2 text-xs text-[#3a2a22]/50">ÄÆ¡n vá»‹: lÆ°á»£ng báº¡c / láº§n</p>
                 </div>
               </label>
 
               <label className="text-sm">
-                <span className="mb-2 block font-medium text-[#3a2a22]/70">Chu kỳ chi trả</span>
+                <span className="mb-2 block font-medium text-[#3a2a22]/70">Chu ká»³ chi tráº£</span>
                 <input
                   value={contract.paymentCycle}
                   onChange={(event) =>
@@ -284,11 +284,11 @@ export default function NannyContract() {
               <div className="flex items-start gap-3">
                 <ShieldCheck className="mt-0.5 h-5 w-5 text-amber-700" />
                 <div>
-                  <p className="font-semibold text-[#5c4033]">Mục lương bằng lượng bạc</p>
+                  <p className="font-semibold text-[#5c4033]">Má»¥c lÆ°Æ¡ng báº±ng lÆ°á»£ng báº¡c</p>
                   <p className="mt-2 text-sm leading-6 text-[#5c4033]/75">
-                    Lương cơ bản hiện tại là {contract.monthlySilverSalary} lượng bạc mỗi kỳ,
-                    thưởng thêm {contract.bonusSilver} lượng bạc theo từng thành tích hoặc hỗ
-                    trợ đặc biệt.
+                    LÆ°Æ¡ng cÆ¡ báº£n hiá»‡n táº¡i lÃ  {contract.monthlySilverSalary} lÆ°á»£ng báº¡c má»—i ká»³,
+                    thÆ°á»Ÿng thÃªm {contract.bonusSilver} lÆ°á»£ng báº¡c theo tá»«ng thÃ nh tÃ­ch hoáº·c há»—
+                    trá»£ Ä‘áº·c biá»‡t.
                   </p>
                 </div>
               </div>
@@ -296,7 +296,7 @@ export default function NannyContract() {
 
             <div className="mt-6">
               <label className="mb-2 block font-medium text-[#3a2a22]/70">
-                Tiêu đề hợp đồng
+                TiÃªu Ä‘á» há»£p Ä‘á»“ng
               </label>
               <input
                 value={contract.title}
@@ -307,7 +307,7 @@ export default function NannyContract() {
               />
 
               <label className="mb-2 block font-medium text-[#3a2a22]/70">
-                Nội dung hợp đồng
+                Ná»™i dung há»£p Ä‘á»“ng
               </label>
               <textarea
                 value={contract.content}
@@ -329,19 +329,19 @@ export default function NannyContract() {
               </div>
               <div>
                 <p className="text-sm uppercase tracking-[0.22em] text-amber-100/60">
-                  Đã chi trả
+                  ÄÃ£ chi tráº£
                 </p>
                 <p className="mt-2 text-3xl font-bold text-amber-300">
-                  {totalSilverPaid.toLocaleString('vi-VN')} lượng bạc
+                  {totalSilverPaid.toLocaleString('vi-VN')} lÆ°á»£ng báº¡c
                 </p>
               </div>
             </div>
           </TiltCard>
 
           <TiltCard className="bg-white/5">
-            <h2 className="text-2xl font-bold text-white">Ghi nhận trả lương bằng bạc</h2>
+            <h2 className="text-2xl font-bold text-white">Ghi nháº­n tráº£ lÆ°Æ¡ng báº±ng báº¡c</h2>
             <p className="mt-2 text-sm text-white/60">
-              Dùng khi thanh toán lương cơ bản, thưởng hoặc hỗ trợ phát sinh.
+              DÃ¹ng khi thanh toÃ¡n lÆ°Æ¡ng cÆ¡ báº£n, thÆ°á»Ÿng hoáº·c há»— trá»£ phÃ¡t sinh.
             </p>
 
             <div className="mt-5 space-y-4">
@@ -353,7 +353,7 @@ export default function NannyContract() {
                 onChange={(event) =>
                   setPaymentForm((current) => ({ ...current, amount: event.target.value }))
                 }
-                placeholder="Ví dụ: 0.5 lượng bạc"
+                placeholder="VÃ­ dá»¥: 0.5 lÆ°á»£ng báº¡c"
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-amber-400 focus:outline-none"
               />
               <input
@@ -361,7 +361,7 @@ export default function NannyContract() {
                 onChange={(event) =>
                   setPaymentForm((current) => ({ ...current, reason: event.target.value }))
                 }
-                placeholder="Lý do chi trả"
+                placeholder="LÃ½ do chi tráº£"
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-amber-400 focus:outline-none"
               />
               <input
@@ -379,24 +379,24 @@ export default function NannyContract() {
                 disabled={isSavingPayment}
                 className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 px-5 py-3 font-semibold text-black disabled:opacity-60"
               >
-                {isSavingPayment ? 'Đang lưu lần chi trả...' : 'Thêm lần trả lương bằng bạc'}
+                {isSavingPayment ? 'Äang lÆ°u láº§n chi tráº£...' : 'ThÃªm láº§n tráº£ lÆ°Æ¡ng báº±ng báº¡c'}
               </button>
             </div>
           </TiltCard>
 
           <TiltCard className="bg-white/5">
-            <h2 className="text-2xl font-bold text-white">Lịch sử chi trả</h2>
+            <h2 className="text-2xl font-bold text-white">Lá»‹ch sá»­ chi tráº£</h2>
 
             {isLoading ? (
               <div className="mt-5 rounded-2xl border border-white/10 bg-black/10 px-4 py-8 text-center text-white/55">
-                Đang tải dữ liệu hợp đồng...
+                Äang táº£i dá»¯ liá»‡u há»£p Ä‘á»“ng...
               </div>
             ) : null}
 
             <div className="mt-5 space-y-3">
               {!isLoading && !payments.length ? (
                 <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-8 text-center text-white/55">
-                  Chưa có lần chi trả nào được ghi nhận.
+                  ChÆ°a cÃ³ láº§n chi tráº£ nÃ o Ä‘Æ°á»£c ghi nháº­n.
                 </div>
               ) : null}
 
@@ -413,7 +413,7 @@ export default function NannyContract() {
                       </p>
                     </div>
                     <p className="font-bold text-amber-300">
-                      {Number(payment.amount).toLocaleString('vi-VN')} lượng bạc
+                      {Number(payment.amount).toLocaleString('vi-VN')} lÆ°á»£ng báº¡c
                     </p>
                   </div>
                 </div>
@@ -425,3 +425,4 @@ export default function NannyContract() {
     </div>
   );
 }
+

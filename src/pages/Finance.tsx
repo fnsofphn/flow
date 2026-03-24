@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   ArrowDownCircle,
@@ -31,27 +31,27 @@ const typeOptions: Array<{
 }> = [
   {
     value: 'contribution',
-    label: 'Đóng quỹ',
-    description: 'Ghi nhanh khoản nạp vào quỹ chung.',
+    label: 'ÄÃ³ng quá»¹',
+    description: 'Ghi nhanh khoáº£n náº¡p vÃ o quá»¹ chung.',
   },
   {
     value: 'expense',
-    label: 'Trừ quỹ',
-    description: 'Ghi nhận một khoản chi từ quỹ.',
+    label: 'Trá»« quá»¹',
+    description: 'Ghi nháº­n má»™t khoáº£n chi tá»« quá»¹.',
   },
   {
     value: 'adjustment',
-    label: 'Điều chỉnh',
-    description: 'Bù quỹ hoặc cân lại số liệu.',
+    label: 'Äiá»u chá»‰nh',
+    description: 'BÃ¹ quá»¹ hoáº·c cÃ¢n láº¡i sá»‘ liá»‡u.',
   },
 ];
 
 const presetAmounts = [100000, 300000, 500000, 1000000, 2000000];
 
 const reasonPresets: Record<EntryType, string[]> = {
-  contribution: ['Đóng quỹ tuần', 'Đóng quỹ tháng', 'Bù quỹ phát sinh'],
-  expense: ['Ăn uống', 'Di chuyển', 'Mua quà', 'Xem phim'],
-  adjustment: ['Cân số dư', 'Hoàn tiền', 'Bổ sung dự phòng'],
+  contribution: ['ÄÃ³ng quá»¹ tuáº§n', 'ÄÃ³ng quá»¹ thÃ¡ng', 'BÃ¹ quá»¹ phÃ¡t sinh'],
+  expense: ['Ä‚n uá»‘ng', 'Di chuyá»ƒn', 'Mua quÃ ', 'Xem phim'],
+  adjustment: ['CÃ¢n sá»‘ dÆ°', 'HoÃ n tiá»n', 'Bá»• sung dá»± phÃ²ng'],
 };
 
 const createEmptyForm = () => ({
@@ -62,7 +62,7 @@ const createEmptyForm = () => ({
 });
 
 const formatCurrency = (amount: number) =>
-  `${amount.toLocaleString('vi-VN')} VNĐ`;
+  `${amount.toLocaleString('vi-VN')} VNÄ`;
 
 export default function Finance() {
   const [entries, setEntries] = useState<FinanceEntry[]>([]);
@@ -116,7 +116,7 @@ export default function Finance() {
 
   const handleSave = async () => {
     if (!form.amount || Number(form.amount) <= 0 || !form.reason.trim()) {
-      setError('Hãy nhập số tiền và lý do để lưu giao dịch.');
+      setError('HÃ£y nháº­p sá»‘ tiá»n vÃ  lÃ½ do Ä‘á»ƒ lÆ°u giao dá»‹ch.');
       return;
     }
 
@@ -156,9 +156,9 @@ export default function Finance() {
     <div className="space-y-8 pb-24">
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="mb-2 text-4xl font-bold tracking-tight">Quản lý tài chính</h1>
+          <h1 className="mb-2 text-4xl font-bold tracking-tight">Quáº£n lÃ½ tÃ i chÃ­nh</h1>
           <p className="text-lg text-white/60">
-            Ưu tiên nhập thật nhanh: chọn loại giao dịch, bấm số tiền, thêm lý do, lưu.
+            Æ¯u tiÃªn nháº­p tháº­t nhanh: chá»n loáº¡i giao dá»‹ch, báº¥m sá»‘ tiá»n, thÃªm lÃ½ do, lÆ°u.
           </p>
         </motion.div>
 
@@ -168,27 +168,27 @@ export default function Finance() {
           className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/10"
         >
           <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          Tải lại
+          Táº£i láº¡i
         </button>
       </header>
 
       <div className="grid gap-4 md:grid-cols-4">
         <TiltCard className="bg-white/5">
-          <p className="text-sm uppercase tracking-[0.22em] text-white/40">Số dư quỹ</p>
+          <p className="text-sm uppercase tracking-[0.22em] text-white/40">Sá»‘ dÆ° quá»¹</p>
           <p className="mt-3 text-3xl font-bold text-white">{formatCurrency(summary.balance)}</p>
         </TiltCard>
         <TiltCard className="bg-emerald-500/10">
-          <p className="text-sm uppercase tracking-[0.22em] text-emerald-200/70">Đã đóng quỹ</p>
+          <p className="text-sm uppercase tracking-[0.22em] text-emerald-200/70">ÄÃ£ Ä‘Ã³ng quá»¹</p>
           <p className="mt-3 text-3xl font-bold text-emerald-300">
             {formatCurrency(summary.contributions)}
           </p>
         </TiltCard>
         <TiltCard className="bg-rose-500/10">
-          <p className="text-sm uppercase tracking-[0.22em] text-rose-200/70">Đã trừ quỹ</p>
+          <p className="text-sm uppercase tracking-[0.22em] text-rose-200/70">ÄÃ£ trá»« quá»¹</p>
           <p className="mt-3 text-3xl font-bold text-rose-300">{formatCurrency(summary.expenses)}</p>
         </TiltCard>
         <TiltCard className="bg-amber-500/10">
-          <p className="text-sm uppercase tracking-[0.22em] text-amber-200/70">Điều chỉnh</p>
+          <p className="text-sm uppercase tracking-[0.22em] text-amber-200/70">Äiá»u chá»‰nh</p>
           <p className="mt-3 text-3xl font-bold text-amber-300">
             {formatCurrency(summary.adjustments)}
           </p>
@@ -208,9 +208,9 @@ export default function Finance() {
               <Coins className="h-6 w-6 text-amber-300" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white">Nhập giao dịch siêu nhanh</h2>
+              <h2 className="text-2xl font-bold text-white">Nháº­p giao dá»‹ch siÃªu nhanh</h2>
               <p className="text-sm text-white/60">
-                Tối ưu cho thao tác trong 10 giây, không cần mở form dài.
+                Tá»‘i Æ°u cho thao tÃ¡c trong 10 giÃ¢y, khÃ´ng cáº§n má»Ÿ form dÃ i.
               </p>
             </div>
           </div>
@@ -235,14 +235,14 @@ export default function Finance() {
 
           <div className="mt-6 space-y-5">
             <div>
-              <label className="mb-2 block text-sm text-white/60">Số tiền</label>
+              <label className="mb-2 block text-sm text-white/60">Sá»‘ tiá»n</label>
               <input
                 type="number"
                 value={form.amount}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, amount: event.target.value }))
                 }
-                placeholder="Ví dụ: 500000"
+                placeholder="VÃ­ dá»¥: 500000"
                 className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-4 text-2xl font-bold text-white placeholder:text-white/25 focus:border-orange-400 focus:outline-none"
               />
               <div className="mt-3 flex flex-wrap gap-2">
@@ -263,7 +263,7 @@ export default function Finance() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm text-white/60">Người ghi nhận</label>
+                <label className="mb-2 block text-sm text-white/60">NgÆ°á»i ghi nháº­n</label>
                 <div className="flex gap-2">
                   {['Nam', 'Cy', 'Chung'].map((person) => (
                     <button
@@ -283,7 +283,7 @@ export default function Finance() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-white/60">Thời gian</label>
+                <label className="mb-2 block text-sm text-white/60">Thá»i gian</label>
                 <input
                   type="datetime-local"
                   value={form.entryAt}
@@ -296,7 +296,7 @@ export default function Finance() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm text-white/60">Lý do</label>
+              <label className="mb-2 block text-sm text-white/60">LÃ½ do</label>
               <input
                 value={form.reason}
                 onChange={(event) =>
@@ -304,10 +304,10 @@ export default function Finance() {
                 }
                 placeholder={
                   entryType === 'contribution'
-                    ? 'Ví dụ: Đóng quỹ cuối tháng'
+                    ? 'VÃ­ dá»¥: ÄÃ³ng quá»¹ cuá»‘i thÃ¡ng'
                     : entryType === 'expense'
-                      ? 'Ví dụ: Ăn tối The Deck'
-                      : 'Ví dụ: Bù quỹ thiếu'
+                      ? 'VÃ­ dá»¥: Ä‚n tá»‘i The Deck'
+                      : 'VÃ­ dá»¥: BÃ¹ quá»¹ thiáº¿u'
                 }
                 className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-orange-400 focus:outline-none"
               />
@@ -332,12 +332,12 @@ export default function Finance() {
               className="w-full rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-4 font-semibold text-white shadow-lg shadow-orange-500/30 disabled:opacity-60"
             >
               {isSaving
-                ? 'Đang lưu giao dịch...'
+                ? 'Äang lÆ°u giao dá»‹ch...'
                 : entryType === 'contribution'
-                  ? 'Lưu khoản đóng quỹ'
+                  ? 'LÆ°u khoáº£n Ä‘Ã³ng quá»¹'
                   : entryType === 'expense'
-                    ? 'Lưu khoản trừ quỹ'
-                    : 'Lưu điều chỉnh'}
+                    ? 'LÆ°u khoáº£n trá»« quá»¹'
+                    : 'LÆ°u Ä‘iá»u chá»‰nh'}
             </button>
           </div>
         </TiltCard>
@@ -345,27 +345,27 @@ export default function Finance() {
         <TiltCard className="bg-white/5">
           <div className="mb-6 flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-white">Dòng tiền gần đây</h2>
+              <h2 className="text-2xl font-bold text-white">DÃ²ng tiá»n gáº§n Ä‘Ã¢y</h2>
               <p className="text-sm text-white/60">
-                Theo dõi từng lần đóng quỹ và trừ quỹ bằng dòng ghi ngắn, rõ ràng.
+                Theo dÃµi tá»«ng láº§n Ä‘Ã³ng quá»¹ vÃ  trá»« quá»¹ báº±ng dÃ²ng ghi ngáº¯n, rÃµ rÃ ng.
               </p>
             </div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs uppercase tracking-[0.22em] text-white/45">
               <Sparkles className="h-3.5 w-3.5" />
-              VNĐ
+              VNÄ
             </div>
           </div>
 
           <div className="space-y-3">
             {isLoading ? (
               <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-10 text-center text-white/55">
-                Đang tải giao dịch từ Supabase...
+                Äang táº£i giao dá»‹ch tá»« kho dữ liệu...
               </div>
             ) : null}
 
             {!isLoading && !entries.length ? (
               <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-10 text-center text-white/55">
-                Chưa có giao dịch nào. Hãy thử nhập khoản đầu tiên ở khung bên trái.
+                ChÆ°a cÃ³ giao dá»‹ch nÃ o. HÃ£y thá»­ nháº­p khoáº£n Ä‘áº§u tiÃªn á»Ÿ khung bÃªn trÃ¡i.
               </div>
             ) : null}
 
@@ -395,14 +395,14 @@ export default function Finance() {
                         <p className="font-semibold text-white">{entry.reason}</p>
                         <span className="rounded-full bg-white/5 px-2 py-1 text-xs text-white/50">
                           {entry.entry_type === 'contribution'
-                            ? 'Đóng quỹ'
+                            ? 'ÄÃ³ng quá»¹'
                             : entry.entry_type === 'expense'
-                              ? 'Trừ quỹ'
-                              : 'Điều chỉnh'}
+                              ? 'Trá»« quá»¹'
+                              : 'Äiá»u chá»‰nh'}
                         </span>
                       </div>
                       <p className="mt-1 text-sm text-white/50">
-                        {entry.person || 'Không ghi người'} ·{' '}
+                        {entry.person || 'KhÃ´ng ghi ngÆ°á»i'} Â·{' '}
                         {new Date(entry.entry_at).toLocaleString('vi-VN')}
                       </p>
                     </div>
@@ -425,3 +425,4 @@ export default function Finance() {
     </div>
   );
 }
+

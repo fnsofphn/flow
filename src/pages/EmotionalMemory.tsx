@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Archive, Heart, Loader2, Lock, Mail, Send, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -36,7 +36,7 @@ export default function EmotionalMemory() {
   const [isWriting, setIsWriting] = useState(Boolean(routeState.compose));
   const [isSaving, setIsSaving] = useState(false);
   const [newContent, setNewContent] = useState(routeState.draft?.content ?? '');
-  const [newEmotion, setNewEmotion] = useState(routeState.draft?.emotion ?? 'Yêu thương');
+  const [newEmotion, setNewEmotion] = useState(routeState.draft?.emotion ?? 'YÃªu thÆ°Æ¡ng');
   const [unlockDays, setUnlockDays] = useState(routeState.draft?.unlockDays ?? 3);
   const [openedNote, setOpenedNote] = useState<Note | null>(null);
   const [flyingNoteId, setFlyingNoteId] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export default function EmotionalMemory() {
     if (routeState.compose) {
       setIsWriting(true);
       setNewContent(routeState.draft?.content ?? '');
-      setNewEmotion(routeState.draft?.emotion ?? 'Yêu thương');
+      setNewEmotion(routeState.draft?.emotion ?? 'YÃªu thÆ°Æ¡ng');
       setUnlockDays(routeState.draft?.unlockDays ?? 3);
       navigate(location.pathname, { replace: true, state: null });
     }
@@ -130,7 +130,7 @@ export default function EmotionalMemory() {
     setIsSaving(false);
     setIsWriting(false);
     setNewContent('');
-    setNewEmotion('Yêu thương');
+    setNewEmotion('YÃªu thÆ°Æ¡ng');
     setUnlockDays(3);
   };
 
@@ -162,11 +162,11 @@ export default function EmotionalMemory() {
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <h1 className="mb-2 flex items-center gap-3 text-4xl font-bold tracking-tight">
-            Hũ bí ẩn tâm thư
+            HÅ© bÃ­ áº©n tÃ¢m thÆ°
             <Mail className="h-8 w-8 text-rose-400" />
           </h1>
           <p className="text-lg text-white/60">
-            Mỗi lá thư được lưu thật trong Supabase và chỉ mở ra đúng vào thời điểm đã hẹn.
+            Má»—i lÃ¡ thÆ° Ä‘Æ°á»£c lÆ°u tháº­t trong kho dữ liệu vÃ  chá»‰ má»Ÿ ra Ä‘Ãºng vÃ o thá»i Ä‘iá»ƒm Ä‘Ã£ háº¹n.
           </p>
         </motion.div>
 
@@ -177,7 +177,7 @@ export default function EmotionalMemory() {
           className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-3 font-medium text-white shadow-lg shadow-rose-500/30"
         >
           <Send className="h-5 w-5" />
-          Viết thư mới
+          Viáº¿t thÆ° má»›i
         </motion.button>
       </header>
 
@@ -194,7 +194,7 @@ export default function EmotionalMemory() {
             <div className="relative flex h-full flex-col items-center justify-center px-6 py-8 text-center">
               <div className="mb-6 flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
                 <Archive className="h-4 w-4 text-cyan-300" />
-                {notes.length} tâm thư đang được giữ trong hũ
+                {notes.length} tÃ¢m thÆ° Ä‘ang Ä‘Æ°á»£c giá»¯ trong hÅ©
               </div>
 
               <div className="relative">
@@ -240,24 +240,24 @@ export default function EmotionalMemory() {
 
               <div className="mt-8 grid w-full gap-3 sm:grid-cols-2">
                 <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-left">
-                  <p className="text-sm uppercase tracking-[0.22em] text-white/40">Có thể mở</p>
+                  <p className="text-sm uppercase tracking-[0.22em] text-white/40">CÃ³ thá»ƒ má»Ÿ</p>
                   <p className="mt-2 text-3xl font-bold text-emerald-300">{readyCount}</p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-left">
-                  <p className="text-sm uppercase tracking-[0.22em] text-white/40">Đang niêm phong</p>
+                  <p className="text-sm uppercase tracking-[0.22em] text-white/40">Äang niÃªm phong</p>
                   <p className="mt-2 text-3xl font-bold text-cyan-200">{lockedCount}</p>
                 </div>
               </div>
 
               {nextUnlock ? (
                 <p className="mt-6 text-sm text-white/55">
-                  Lá thư gần nhất sẽ mở vào{' '}
+                  LÃ¡ thÆ° gáº§n nháº¥t sáº½ má»Ÿ vÃ o{' '}
                   <span className="font-semibold text-white/80">
                     {new Date(nextUnlock.unlock_date).toLocaleString('vi-VN')}
                   </span>
                 </p>
               ) : (
-                <p className="mt-6 text-sm text-white/55">Hiện không còn thư nào đang chờ mở.</p>
+                <p className="mt-6 text-sm text-white/55">Hiá»‡n khÃ´ng cÃ²n thÆ° nÃ o Ä‘ang chá» má»Ÿ.</p>
               )}
             </div>
           </div>
@@ -266,13 +266,13 @@ export default function EmotionalMemory() {
         <div className="space-y-4">
           {isLoading ? (
             <TiltCard className="bg-white/5 text-center text-white/60">
-              Đang tải tâm thư từ Supabase...
+              Äang táº£i tÃ¢m thÆ° tá»« kho dữ liệu...
             </TiltCard>
           ) : null}
 
           {!isLoading && !notes.length ? (
             <TiltCard className="bg-white/5 text-center text-white/60">
-              Chưa có tâm thư nào trong hũ. Hãy tạo lá thư đầu tiên.
+              ChÆ°a cÃ³ tÃ¢m thÆ° nÃ o trong hÅ©. HÃ£y táº¡o lÃ¡ thÆ° Ä‘áº§u tiÃªn.
             </TiltCard>
           ) : null}
 
@@ -309,18 +309,18 @@ export default function EmotionalMemory() {
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-semibold text-white">{note.emotion}</p>
                           <span className="rounded-full bg-white/5 px-2 py-1 text-xs text-white/45">
-                            {isOpened ? 'Đã mở' : isReady ? 'Đến giờ mở' : 'Đang niêm phong'}
+                            {isOpened ? 'ÄÃ£ má»Ÿ' : isReady ? 'Äáº¿n giá» má»Ÿ' : 'Äang niÃªm phong'}
                           </span>
                         </div>
                         <p className="mt-2 text-sm text-white/55">
                           {isReady
-                            ? 'Chạm để mở thư.'
-                            : `Mở vào ${new Date(note.unlock_date).toLocaleString('vi-VN')}`}
+                            ? 'Cháº¡m Ä‘á»ƒ má»Ÿ thÆ°.'
+                            : `Má»Ÿ vÃ o ${new Date(note.unlock_date).toLocaleString('vi-VN')}`}
                         </p>
                         <p className="mt-3 text-sm leading-6 text-white/70">
                           {isOpened
                             ? note.content
-                            : 'Nội dung đang được giữ kín bên trong hũ bí ẩn cho đến đúng thời điểm.'}
+                            : 'Ná»™i dung Ä‘ang Ä‘Æ°á»£c giá»¯ kÃ­n bÃªn trong hÅ© bÃ­ áº©n cho Ä‘áº¿n Ä‘Ãºng thá»i Ä‘iá»ƒm.'}
                         </p>
                       </div>
                     </div>
@@ -356,36 +356,36 @@ export default function EmotionalMemory() {
             >
               <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
                 <Heart className="h-6 w-6 text-rose-500" />
-                Niêm phong lá thư mới
+                NiÃªm phong lÃ¡ thÆ° má»›i
               </h2>
 
               <div className="space-y-4">
                 <textarea
                   value={newContent}
                   onChange={(event) => setNewContent(event.target.value)}
-                  placeholder="Viết điều bạn muốn cất trong hũ bí ẩn..."
+                  placeholder="Viáº¿t Ä‘iá»u báº¡n muá»‘n cáº¥t trong hÅ© bÃ­ áº©n..."
                   rows={6}
                   className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-white placeholder:text-white/30 focus:border-rose-500 focus:outline-none"
                 />
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm text-white/60">Sắc thái lá thư</label>
+                    <label className="mb-2 block text-sm text-white/60">Sáº¯c thÃ¡i lÃ¡ thÆ°</label>
                     <select
                       value={newEmotion}
                       onChange={(event) => setNewEmotion(event.target.value)}
                       className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-rose-500 focus:outline-none"
                     >
-                      <option value="Yêu thương">Yêu thương</option>
-                      <option value="Biết ơn">Biết ơn</option>
-                      <option value="Xin lỗi">Xin lỗi</option>
-                      <option value="Bất ngờ">Bất ngờ</option>
-                      <option value="Nhớ thương">Nhớ thương</option>
+                      <option value="YÃªu thÆ°Æ¡ng">YÃªu thÆ°Æ¡ng</option>
+                      <option value="Biáº¿t Æ¡n">Biáº¿t Æ¡n</option>
+                      <option value="Xin lá»—i">Xin lá»—i</option>
+                      <option value="Báº¥t ngá»">Báº¥t ngá»</option>
+                      <option value="Nhá»› thÆ°Æ¡ng">Nhá»› thÆ°Æ¡ng</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm text-white/60">Mở sau (ngày)</label>
+                    <label className="mb-2 block text-sm text-white/60">Má»Ÿ sau (ngÃ y)</label>
                     <input
                       type="number"
                       min="1"
@@ -402,7 +402,7 @@ export default function EmotionalMemory() {
                   disabled={isSaving}
                   className="w-full rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-4 font-semibold text-white shadow-lg shadow-rose-500/30 disabled:opacity-60"
                 >
-                  {isSaving ? 'Đang niêm phong...' : 'Niêm phong và thả thư vào hũ'}
+                  {isSaving ? 'Äang niÃªm phong...' : 'NiÃªm phong vÃ  tháº£ thÆ° vÃ o hÅ©'}
                 </button>
               </div>
             </motion.div>
@@ -455,3 +455,4 @@ export default function EmotionalMemory() {
     </div>
   );
 }
+

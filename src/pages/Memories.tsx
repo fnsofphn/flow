@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   Calendar,
@@ -42,7 +42,7 @@ export default function Memories() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
-  const [uploadLabel, setUploadLabel] = useState('Chưa chọn ảnh từ máy');
+  const [uploadLabel, setUploadLabel] = useState('ChÆ°a chá»n áº£nh tá»« mÃ¡y');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const featuredMemory = useMemo(() => memories[0] ?? null, [memories]);
@@ -51,7 +51,7 @@ export default function Memories() {
   const resetForm = () => {
     setForm(emptyForm);
     setEditingMemory(null);
-    setUploadLabel('Chưa chọn ảnh từ máy');
+    setUploadLabel('ChÆ°a chá»n áº£nh tá»« mÃ¡y');
   };
 
   const closeModal = () => {
@@ -96,7 +96,7 @@ export default function Memories() {
       imageUrl: memory.image_url,
       description: memory.description,
     });
-    setUploadLabel('Đang dùng ảnh hiện tại');
+    setUploadLabel('Äang dÃ¹ng áº£nh hiá»‡n táº¡i');
     setIsModalOpen(true);
   };
 
@@ -124,7 +124,7 @@ export default function Memories() {
       !form.imageUrl.trim() ||
       !form.description.trim()
     ) {
-      setError('Hãy điền đủ tiêu đề, ngày, địa điểm, ảnh và mô tả kỷ niệm.');
+      setError('HÃ£y Ä‘iá»n Ä‘á»§ tiÃªu Ä‘á», ngÃ y, Ä‘á»‹a Ä‘iá»ƒm, áº£nh vÃ  mÃ´ táº£ ká»· niá»‡m.');
       return;
     }
 
@@ -204,11 +204,11 @@ export default function Memories() {
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <h1 className="mb-2 flex items-center gap-3 text-4xl font-bold tracking-tight">
-            Kỷ niệm của chúng ta
+            Ká»· niá»‡m cá»§a chÃºng ta
             <Heart className="h-8 w-8 animate-pulse fill-pink-500 text-pink-500" />
           </h1>
           <p className="text-lg text-white/60">
-            Giờ bạn có thể sửa kỷ niệm, đổi ảnh, hoặc upload ảnh trực tiếp từ máy.
+            Giá» báº¡n cÃ³ thá»ƒ sá»­a ká»· niá»‡m, Ä‘á»•i áº£nh, hoáº·c upload áº£nh trá»±c tiáº¿p tá»« mÃ¡y.
           </p>
         </motion.div>
 
@@ -218,7 +218,7 @@ export default function Memories() {
             className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/10"
           >
             <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Tải lại
+            Táº£i láº¡i
           </button>
           <motion.button
             whileHover={{ scale: 1.03 }}
@@ -227,7 +227,7 @@ export default function Memories() {
             className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-3 font-medium text-white shadow-lg shadow-orange-500/30"
           >
             <Plus className="h-5 w-5" />
-            Thêm kỷ niệm
+            ThÃªm ká»· niá»‡m
           </motion.button>
         </div>
       </header>
@@ -239,7 +239,7 @@ export default function Memories() {
       ) : null}
 
       {isLoading ? (
-        <TiltCard className="text-center text-white/60">Đang tải kỷ niệm từ Supabase...</TiltCard>
+        <TiltCard className="text-center text-white/60">Äang táº£i ká»· niá»‡m tá»« kho dữ liệu...</TiltCard>
       ) : null}
 
       {!isLoading && featuredMemory ? (
@@ -266,11 +266,11 @@ export default function Memories() {
               className="absolute right-6 top-6 z-20 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-4 py-2 text-sm font-medium text-white backdrop-blur-md"
             >
               <PencilLine className="h-4 w-4" />
-              Chỉnh sửa
+              Chá»‰nh sá»­a
             </button>
             <div className="absolute left-6 top-6 z-20 flex items-center gap-2 rounded-full border border-white/20 bg-white/20 px-4 py-2 backdrop-blur-md">
               <Calendar className="h-4 w-4 text-orange-400" />
-              <span className="text-sm font-semibold tracking-wide text-white">KỶ NIỆM NỔI BẬT</span>
+              <span className="text-sm font-semibold tracking-wide text-white">Ká»¶ NIá»†M Ná»”I Báº¬T</span>
             </div>
             <div className="absolute bottom-6 left-6 z-20 max-w-2xl md:bottom-10 md:left-10">
               <h2 className="mb-4 text-3xl font-bold text-white drop-shadow-lg md:text-5xl">
@@ -285,7 +285,7 @@ export default function Memories() {
           <div className="mt-12">
             <h3 className="mb-8 flex items-center gap-2 text-2xl font-bold">
               <ImageIcon className="h-6 w-6 text-orange-400" />
-              Dòng thời gian
+              DÃ²ng thá»i gian
             </h3>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -308,7 +308,7 @@ export default function Memories() {
                       />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity hover:opacity-100">
                         <span className="rounded-full bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-md">
-                          Xem ảnh
+                          Xem áº£nh
                         </span>
                       </div>
                     </div>
@@ -351,7 +351,7 @@ export default function Memories() {
                           onClick={() => openEdit(memory)}
                           className="text-sm font-medium text-white/60 transition-colors hover:text-white"
                         >
-                          Đổi ảnh hoặc chỉnh nội dung
+                          Äá»•i áº£nh hoáº·c chá»‰nh ná»™i dung
                         </button>
                       </div>
                     </div>
@@ -364,7 +364,7 @@ export default function Memories() {
       ) : null}
 
       {!isLoading && !memories.length ? (
-        <TiltCard className="text-center text-white/60">Chưa có kỷ niệm nào trong Supabase.</TiltCard>
+        <TiltCard className="text-center text-white/60">ChÆ°a cÃ³ ká»· niá»‡m nÃ o trong kho dữ liệu.</TiltCard>
       ) : null}
 
       <AnimatePresence>
@@ -381,7 +381,7 @@ export default function Memories() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               src={selectedImage}
-              alt="Ảnh kỷ niệm"
+              alt="áº¢nh ká»· niá»‡m"
               className="max-h-[90vh] max-w-full rounded-xl object-contain shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             />
@@ -389,7 +389,7 @@ export default function Memories() {
               className="absolute right-6 top-6 rounded-full bg-white/10 p-2 text-white/50 backdrop-blur-md transition-colors hover:text-white"
               onClick={() => setSelectedImage(null)}
             >
-              Đóng
+              ÄÃ³ng
             </button>
           </motion.div>
         ) : null}
@@ -413,7 +413,7 @@ export default function Memories() {
             >
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-white">
-                  {editingMemory ? 'Chỉnh sửa kỷ niệm' : 'Thêm kỷ niệm mới'}
+                  {editingMemory ? 'Chá»‰nh sá»­a ká»· niá»‡m' : 'ThÃªm ká»· niá»‡m má»›i'}
                 </h2>
                 <button
                   onClick={closeModal}
@@ -429,7 +429,7 @@ export default function Memories() {
                   onChange={(event) =>
                     setForm((current) => ({ ...current, title: event.target.value }))
                   }
-                  placeholder="Tiêu đề kỷ niệm"
+                  placeholder="TiÃªu Ä‘á» ká»· niá»‡m"
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-400 focus:outline-none"
                 />
 
@@ -447,7 +447,7 @@ export default function Memories() {
                     onChange={(event) =>
                       setForm((current) => ({ ...current, location: event.target.value }))
                     }
-                    placeholder="Địa điểm"
+                    placeholder="Äá»‹a Ä‘iá»ƒm"
                     className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-400 focus:outline-none"
                   />
                 </div>
@@ -455,9 +455,9 @@ export default function Memories() {
                 <div className="rounded-2xl border border-dashed border-white/15 bg-black/10 p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <p className="font-medium text-white">Ảnh kỷ niệm</p>
+                      <p className="font-medium text-white">áº¢nh ká»· niá»‡m</p>
                       <p className="text-sm text-white/55">
-                        Bạn có thể dán link ảnh hoặc upload trực tiếp từ máy.
+                        Báº¡n cÃ³ thá»ƒ dÃ¡n link áº£nh hoáº·c upload trá»±c tiáº¿p tá»« mÃ¡y.
                       </p>
                     </div>
                     <button
@@ -466,7 +466,7 @@ export default function Memories() {
                       className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/10"
                     >
                       <Upload className="h-4 w-4" />
-                      Chọn ảnh từ máy
+                      Chá»n áº£nh tá»« mÃ¡y
                     </button>
                   </div>
 
@@ -485,7 +485,7 @@ export default function Memories() {
                     onChange={(event) =>
                       setForm((current) => ({ ...current, imageUrl: event.target.value }))
                     }
-                    placeholder="Link ảnh công khai hoặc ảnh data URL"
+                    placeholder="Link áº£nh cÃ´ng khai hoáº·c áº£nh data URL"
                     className="mt-4 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-400 focus:outline-none"
                   />
 
@@ -493,7 +493,7 @@ export default function Memories() {
                     <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
                       <img
                         src={form.imageUrl}
-                        alt="Xem trước ảnh kỷ niệm"
+                        alt="Xem trÆ°á»›c áº£nh ká»· niá»‡m"
                         className="h-56 w-full object-cover"
                       />
                     </div>
@@ -501,7 +501,7 @@ export default function Memories() {
                     <div className="mt-4 flex h-40 items-center justify-center rounded-2xl border border-dashed border-white/10 text-white/35">
                       <div className="text-center">
                         <ImagePlus className="mx-auto h-8 w-8" />
-                        <p className="mt-3 text-sm">Ảnh xem trước sẽ hiện tại đây</p>
+                        <p className="mt-3 text-sm">áº¢nh xem trÆ°á»›c sáº½ hiá»‡n táº¡i Ä‘Ã¢y</p>
                       </div>
                     </div>
                   )}
@@ -512,7 +512,7 @@ export default function Memories() {
                   onChange={(event) =>
                     setForm((current) => ({ ...current, description: event.target.value }))
                   }
-                  placeholder="Mô tả khoảnh khắc"
+                  placeholder="MÃ´ táº£ khoáº£nh kháº¯c"
                   rows={5}
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-400 focus:outline-none"
                 />
@@ -525,10 +525,10 @@ export default function Memories() {
                   className="rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-3 font-semibold text-white shadow-lg shadow-orange-500/30 disabled:opacity-60"
                 >
                   {isSaving
-                    ? 'Đang lưu...'
+                    ? 'Äang lÆ°u...'
                     : editingMemory
-                      ? 'Lưu thay đổi'
-                      : 'Lưu kỷ niệm'}
+                      ? 'LÆ°u thay Ä‘á»•i'
+                      : 'LÆ°u ká»· niá»‡m'}
                 </button>
               </div>
             </motion.div>
@@ -538,3 +538,4 @@ export default function Memories() {
     </div>
   );
 }
+
