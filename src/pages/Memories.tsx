@@ -41,6 +41,16 @@ const sanitizeFileName = (value: string) =>
     .replace(/^-+|-+$/g, '')
     .toLowerCase() || 'ky-niem';
 
+const triggerBrowserDownload = (url: string, filename: string) => {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
+
 export default function Memories() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -207,29 +217,28 @@ export default function Memories() {
       const filename = `${sanitizeFileName(memory.title)}.jpg`;
 
       if (memory.image_url.startsWith('data:')) {
-        const link = document.createElement('a');
-        link.href = memory.image_url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+        triggerBrowserDownload(memory.image_url, filename);
         return;
       }
 
-      const response = await fetch(memory.image_url);
-      if (!response.ok) {
-        throw new Error('Không thể tải ảnh từ nguồn hiện tại.');
+      const imageUrl = new URL(memory.image_url, window.location.origin);
+      const isSameOrigin = imageUrl.origin === window.location.origin;
+
+      if (isSameOrigin) {
+        const response = await fetch(memory.image_url);
+        if (!response.ok) {
+          throw new Error('Không thể tải ảnh từ nguồn hiện tại.');
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        triggerBrowserDownload(objectUrl, filename);
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        return;
       }
 
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = objectUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(objectUrl);
+      window.open(memory.image_url, '_blank', 'noopener,noreferrer');
+      setDownloadError('Ảnh đang được mở ở tab mới để bạn tải về từ nguồn gốc.');
     } catch (downloadIssue) {
       const message =
         downloadIssue instanceof Error
@@ -378,7 +387,8 @@ export default function Memories() {
               <button
                 type="button"
                 className="absolute bottom-6 rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white backdrop-blur-md transition-colors hover:bg-white/15"
-                onClick={() => {
+                onClick={(event) => {
+                  event.stopPropagation();
                   const matchedMemory = memories.find((memory) => memory.image_url === selectedImage);
                   if (matchedMemory) {
                     void downloadMemoryImage(matchedMemory);
@@ -388,7 +398,7 @@ export default function Memories() {
                 Tải ảnh này về máy
               </button>
             ) : null}
-            <button className="absolute right-6 top-6 rounded-full bg-white/10 p-2 text-white/50 backdrop-blur-md transition-colors hover:text-white" onClick={() => setSelectedImage(null)}>
+            <button className="absolute right-6 top-6 rounded-full bg-white/10 p-2 text-white/50 backdrop-blur-md transition-colors hover:text-white" onClick={(event) => { event.stopPropagation(); setSelectedImage(null); }}>
               Đóng
             </button>
           </motion.div>
