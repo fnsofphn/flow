@@ -22,24 +22,24 @@ create policy "public can read music sources"
   to anon, authenticated
   using (true);
 
-drop policy if exists "public can insert music sources" on public.music_sources;
-create policy "public can insert music sources"
+drop policy if exists "authenticated can insert music sources" on public.music_sources;
+create policy "authenticated can insert music sources"
   on public.music_sources
   for insert
-  to anon, authenticated
+  to authenticated
   with check (true);
 
-drop policy if exists "public can update music sources" on public.music_sources;
-create policy "public can update music sources"
+drop policy if exists "authenticated can update music sources" on public.music_sources;
+create policy "authenticated can update music sources"
   on public.music_sources
   for update
-  to anon, authenticated
+  to authenticated
   using (true)
   with check (true);
 
-drop policy if exists "public can delete music sources" on public.music_sources;
-create policy "public can delete music sources"
+drop policy if exists "authenticated can delete music sources" on public.music_sources;
+create policy "authenticated can delete music sources"
   on public.music_sources
   for delete
-  to anon, authenticated
+  to authenticated
   using (true);

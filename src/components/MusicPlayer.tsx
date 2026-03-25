@@ -195,6 +195,11 @@ export default function MusicPlayer() {
     nextTitle = title,
     nextSubtitle = subtitle,
   ) => {
+    if (!userEmail) {
+      setMessage('Hay ket noi Google truoc khi luu nguon phat YouTube.');
+      return;
+    }
+
     const parsed = parseYouTubeUrl(nextUrl);
 
     if (!parsed) {
@@ -279,6 +284,11 @@ export default function MusicPlayer() {
   };
 
   const importPlaylist = async (playlist: YouTubePlaylist) => {
+    if (!userEmail) {
+      setMessage('Hay ket noi Google truoc khi nhap playlist tu tai khoan cua ban.');
+      return;
+    }
+
     const playlistUrl = `https://www.youtube.com/playlist?list=${playlist.id}`;
     const nextTitle = playlist.title;
     const nextSubtitle = `${playlist.itemCount} video trong playlist cua ban`;
