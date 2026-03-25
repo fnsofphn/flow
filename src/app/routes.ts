@@ -7,6 +7,7 @@ import {
   Heart,
   Home,
   Image as ImageIcon,
+  Music,
   Moon,
   Plane,
   TrendingUp,
@@ -70,6 +71,13 @@ export const appRoutes: AppRoute[] = [
     icon: Moon,
     nav: true,
     component: lazy(() => import('@/pages/DreamAI')),
+  },
+  {
+    path: '/music-library',
+    label: 'Thư viện âm nhạc',
+    icon: Music,
+    nav: true,
+    component: lazy(() => import('@/pages/MusicLibrary')),
   },
   {
     path: '/emotional-memory',
