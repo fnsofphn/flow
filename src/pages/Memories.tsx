@@ -33,12 +33,21 @@ const emptyForm = {
   description: '',
 };
 
+const sanitizeFileName = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase() || 'ky-niem';
+
 export default function Memories() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
@@ -191,6 +200,45 @@ export default function Memories() {
     }
   };
 
+  const downloadMemoryImage = async (memory: Memory) => {
+    setDownloadError(null);
+
+    try {
+      const filename = `${sanitizeFileName(memory.title)}.jpg`;
+
+      if (memory.image_url.startsWith('data:')) {
+        const link = document.createElement('a');
+        link.href = memory.image_url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        return;
+      }
+
+      const response = await fetch(memory.image_url);
+      if (!response.ok) {
+        throw new Error('Không thể tải ảnh từ nguồn hiện tại.');
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (downloadIssue) {
+      const message =
+        downloadIssue instanceof Error
+          ? downloadIssue.message
+          : 'Không thể tải ảnh về máy ngay lúc này.';
+      setDownloadError(message);
+    }
+  };
+
   return (
     <div className="space-y-8 pb-24">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -217,6 +265,11 @@ export default function Memories() {
       </header>
 
       {error ? <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
+      {downloadError ? (
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
+          {downloadError}
+        </div>
+      ) : null}
 
       {isLoading ? <TiltCard className="text-center text-white/60">Đang tải thư viện kỷ niệm...</TiltCard> : null}
 
@@ -228,6 +281,17 @@ export default function Memories() {
             <button type="button" onClick={(event) => { event.stopPropagation(); openEdit(featuredMemory); }} className="absolute right-6 top-6 z-20 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-4 py-2 text-sm font-medium text-white backdrop-blur-md">
               <PencilLine className="h-4 w-4" />
               Chỉnh sửa
+            </button>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                void downloadMemoryImage(featuredMemory);
+              }}
+              className="absolute right-6 top-20 z-20 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-4 py-2 text-sm font-medium text-white backdrop-blur-md"
+            >
+              <Upload className="h-4 w-4" />
+              Tải ảnh về máy
             </button>
             <div className="absolute left-6 top-6 z-20 flex items-center gap-2 rounded-full border border-white/20 bg-white/20 px-4 py-2 backdrop-blur-md">
               <Calendar className="h-4 w-4 text-orange-400" />
@@ -282,9 +346,18 @@ export default function Memories() {
                           <Heart className="h-4 w-4 fill-current" />
                           {memory.likes}
                         </button>
-                        <button type="button" onClick={() => openEdit(memory)} className="text-sm font-medium text-white/60 transition-colors hover:text-white">
-                          Đổi ảnh hoặc chỉnh nội dung
-                        </button>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => void downloadMemoryImage(memory)}
+                            className="text-sm font-medium text-white/60 transition-colors hover:text-white"
+                          >
+                            Tải ảnh
+                          </button>
+                          <button type="button" onClick={() => openEdit(memory)} className="text-sm font-medium text-white/60 transition-colors hover:text-white">
+                            Đổi ảnh hoặc chỉnh nội dung
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </TiltCard>
@@ -301,6 +374,20 @@ export default function Memories() {
         {selectedImage ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm" onClick={() => setSelectedImage(null)}>
             <motion.img initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} src={selectedImage} alt="Ảnh kỷ niệm" className="max-h-[90vh] max-w-full rounded-xl object-contain shadow-2xl" onClick={(event) => event.stopPropagation()} />
+            {memories.find((memory) => memory.image_url === selectedImage) ? (
+              <button
+                type="button"
+                className="absolute bottom-6 rounded-full bg-white/10 px-5 py-3 text-sm font-medium text-white backdrop-blur-md transition-colors hover:bg-white/15"
+                onClick={() => {
+                  const matchedMemory = memories.find((memory) => memory.image_url === selectedImage);
+                  if (matchedMemory) {
+                    void downloadMemoryImage(matchedMemory);
+                  }
+                }}
+              >
+                Tải ảnh này về máy
+              </button>
+            ) : null}
             <button className="absolute right-6 top-6 rounded-full bg-white/10 p-2 text-white/50 backdrop-blur-md transition-colors hover:text-white" onClick={() => setSelectedImage(null)}>
               Đóng
             </button>
