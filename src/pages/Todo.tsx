@@ -24,6 +24,30 @@ const emptyForm = {
   mapUrl: '',
 };
 
+const assigneeOptions = [
+  {
+    value: 'Nam',
+    title: 'Nam',
+    subtitle: 'Chịu trách nhiệm chính',
+    className:
+      'border-sky-400/30 bg-[radial-gradient(circle_at_top,#38bdf8_0%,#0f172a_58%,#020617_100%)] text-sky-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_18px_40px_rgba(14,165,233,0.22)]',
+  },
+  {
+    value: 'Cy',
+    title: 'Cy',
+    subtitle: 'Người trực tiếp xử lý',
+    className:
+      'border-fuchsia-400/30 bg-[radial-gradient(circle_at_top,#f472b6_0%,#312e81_55%,#111827_100%)] text-fuchsia-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_18px_40px_rgba(217,70,239,0.2)]',
+  },
+  {
+    value: 'Nam & Cy',
+    title: 'Cả hai',
+    subtitle: 'Phối hợp cùng thực hiện',
+    className:
+      'border-amber-300/30 bg-[radial-gradient(circle_at_top,#fbbf24_0%,#7c2d12_42%,#1f2937_100%)] text-amber-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_20px_45px_rgba(251,191,36,0.18)]',
+  },
+] as const;
+
 const formatCurrency = (amount: number) => `${amount.toLocaleString('vi-VN')} VNĐ`;
 
 const toDateTimeLocalValue = (value: string) => {
@@ -39,6 +63,25 @@ const sortTodosByDeadline = (items: Todo[]) =>
     if (!b.deadline) return -1;
     return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
   });
+
+const renderAssigneeBadges = (assignee: string) => {
+  const people = assignee.split('&').map((item) => item.trim()).filter(Boolean);
+
+  return people.map((person) => {
+    const palette =
+      person === 'Nam'
+        ? 'border-sky-400/20 bg-sky-400/10 text-sky-100'
+        : person === 'Cy'
+          ? 'border-fuchsia-400/20 bg-fuchsia-400/10 text-fuchsia-100'
+          : 'border-white/10 bg-white/10 text-white/80';
+
+    return (
+      <span key={`${assignee}-${person}`} className={`rounded-full border px-2.5 py-1 font-medium ${palette}`}>
+        {person}
+      </span>
+    );
+  });
+};
 
 export default function Todo() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -262,7 +305,7 @@ export default function Todo() {
                       <div>
                         <h3 className={`text-xl font-bold ${todo.done ? 'line-through text-white/50' : 'text-white/90'}`}>{todo.task}</h3>
                         <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-white/60">
-                          <span className="rounded bg-white/10 px-2 py-1 font-medium text-white/80">{todo.assignee}</span>
+                          {renderAssigneeBadges(todo.assignee)}
                           <span className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />
                             {todo.deadline
@@ -337,10 +380,36 @@ export default function Todo() {
               <div className="space-y-4">
                 <input value={form.task} onChange={(e) => setForm((current) => ({ ...current, task: e.target.value }))} placeholder="Tên công việc" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-blue-400 focus:outline-none" />
                 <div className="grid gap-4 md:grid-cols-2">
-                  <select value={form.assignee} onChange={(e) => setForm((current) => ({ ...current, assignee: e.target.value }))} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-blue-400 focus:outline-none">
-                    <option value="Nam">Nam</option>
-                    <option value="Cy">Cy</option>
-                  </select>
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-white/45">Người thực hiện</p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
+                      {assigneeOptions.map((option) => {
+                        const active = form.assignee === option.value;
+
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setForm((current) => ({ ...current, assignee: option.value }))}
+                            className={`group relative overflow-hidden rounded-2xl border p-4 text-left transition-all duration-300 ${
+                              active
+                                ? `${option.className} -translate-y-0.5 scale-[1.01]`
+                                : 'border-white/10 bg-white/[0.04] text-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_28px_rgba(0,0,0,0.18)] hover:border-white/20 hover:bg-white/[0.08] hover:-translate-y-0.5'
+                            }`}
+                          >
+                            <div className="absolute inset-x-0 top-0 h-px bg-white/25" />
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-base font-semibold">{option.title}</p>
+                                <p className={`mt-1 text-xs leading-5 ${active ? 'text-white/75' : 'text-white/45'}`}>{option.subtitle}</p>
+                              </div>
+                              <div className={`mt-0.5 h-3.5 w-3.5 rounded-full border ${active ? 'border-white/70 bg-white/90' : 'border-white/25 bg-transparent group-hover:border-white/45'}`} />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                   <input type="datetime-local" value={form.deadline} onChange={(e) => setForm((current) => ({ ...current, deadline: e.target.value }))} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-blue-400 focus:outline-none [color-scheme:dark]" />
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
