@@ -28,21 +28,18 @@ const assigneeOptions = [
   {
     value: 'Nam',
     title: 'Nam',
-    subtitle: 'Chịu trách nhiệm chính',
     className:
       'border-sky-400/30 bg-[radial-gradient(circle_at_top,#38bdf8_0%,#0f172a_58%,#020617_100%)] text-sky-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_18px_40px_rgba(14,165,233,0.22)]',
   },
   {
     value: 'Cy',
     title: 'Cy',
-    subtitle: 'Người trực tiếp xử lý',
     className:
       'border-fuchsia-400/30 bg-[radial-gradient(circle_at_top,#f472b6_0%,#312e81_55%,#111827_100%)] text-fuchsia-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_18px_40px_rgba(217,70,239,0.2)]',
   },
   {
     value: 'Nam & Cy',
     title: 'Cả hai',
-    subtitle: 'Phối hợp cùng thực hiện',
     className:
       'border-amber-300/30 bg-[radial-gradient(circle_at_top,#fbbf24_0%,#7c2d12_42%,#1f2937_100%)] text-amber-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_20px_45px_rgba(251,191,36,0.18)]',
   },
@@ -379,7 +376,7 @@ export default function Todo() {
 
               <div className="space-y-4">
                 <input value={form.task} onChange={(e) => setForm((current) => ({ ...current, task: e.target.value }))} placeholder="Tên công việc" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-blue-400 focus:outline-none" />
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
                   <div className="space-y-3">
                     <p className="text-sm font-medium uppercase tracking-[0.18em] text-white/45">Người thực hiện</p>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
@@ -398,11 +395,8 @@ export default function Todo() {
                             }`}
                           >
                             <div className="absolute inset-x-0 top-0 h-px bg-white/25" />
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="text-base font-semibold">{option.title}</p>
-                                <p className={`mt-1 text-xs leading-5 ${active ? 'text-white/75' : 'text-white/45'}`}>{option.subtitle}</p>
-                              </div>
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-base font-semibold">{option.title}</p>
                               <div className={`mt-0.5 h-3.5 w-3.5 rounded-full border ${active ? 'border-white/70 bg-white/90' : 'border-white/25 bg-transparent group-hover:border-white/45'}`} />
                             </div>
                           </button>
@@ -410,10 +404,35 @@ export default function Todo() {
                       })}
                     </div>
                   </div>
-                  <input type="datetime-local" value={form.deadline} onChange={(e) => setForm((current) => ({ ...current, deadline: e.target.value }))} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-blue-400 focus:outline-none [color-scheme:dark]" />
+                  <div className="relative overflow-hidden rounded-2xl border border-cyan-400/20 bg-[radial-gradient(circle_at_top,#164e63_0%,#0f172a_52%,#020617_100%)] p-4 text-cyan-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_20px_45px_rgba(8,145,178,0.16)]">
+                    <div className="absolute inset-x-0 top-0 h-px bg-white/20" />
+                    <p className="mb-3 text-sm font-medium uppercase tracking-[0.18em] text-cyan-100/55">Thời gian</p>
+                    <input
+                      type="datetime-local"
+                      value={form.deadline}
+                      onChange={(e) => setForm((current) => ({ ...current, deadline: e.target.value }))}
+                      className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-white focus:border-cyan-300 focus:outline-none [color-scheme:dark]"
+                    />
+                    <p className="mt-3 text-xs text-cyan-100/55">Có thể để trống nếu chưa chốt lịch.</p>
+                  </div>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <input type="number" value={form.cost} onChange={(e) => setForm((current) => ({ ...current, cost: e.target.value }))} placeholder="Chi phí dự kiến" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-blue-400 focus:outline-none" />
+                  <div className="relative overflow-hidden rounded-2xl border border-amber-300/20 bg-[radial-gradient(circle_at_top,#7c2d12_0%,#1f2937_50%,#020617_100%)] p-4 text-amber-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_20px_45px_rgba(245,158,11,0.14)]">
+                    <div className="absolute inset-x-0 top-0 h-px bg-white/20" />
+                    <p className="mb-3 text-sm font-medium uppercase tracking-[0.18em] text-amber-100/60">Chi phí dự kiến</p>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={form.cost}
+                        onChange={(e) => setForm((current) => ({ ...current, cost: e.target.value }))}
+                        placeholder="0"
+                        className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 pr-16 text-white placeholder:text-white/25 focus:border-amber-300 focus:outline-none"
+                      />
+                      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold uppercase tracking-[0.16em] text-amber-100/65">
+                        VNĐ
+                      </span>
+                    </div>
+                  </div>
                   <input value={form.location} onChange={(e) => setForm((current) => ({ ...current, location: e.target.value }))} placeholder="Địa điểm hoặc ghi chú vị trí" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-blue-400 focus:outline-none" />
                 </div>
                 <input value={form.mapUrl} onChange={(e) => setForm((current) => ({ ...current, mapUrl: e.target.value }))} placeholder="Liên kết Google Maps (không bắt buộc)" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-blue-400 focus:outline-none" />
