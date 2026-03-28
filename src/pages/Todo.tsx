@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Calendar, CalendarDays, CheckCircle2, CheckSquare, Circle, Clock3, DollarSign, MapPin, Plus, RefreshCcw, X } from 'lucide-react';
+import { Calendar, CalendarDays, CheckCircle2, CheckSquare, Circle, Clock3, MapPin, Plus, RefreshCcw, X } from 'lucide-react';
 import TiltCard from '../components/TiltCard';
 import { supabase } from '../lib/supabase';
 
@@ -105,6 +105,7 @@ const renderAssigneeBadges = (assignee: string) => {
 export default function Todo() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [selectedMap, setSelectedMap] = useState<string | null>(null);
+  const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [isDeadlinePickerOpen, setIsDeadlinePickerOpen] = useState(false);
@@ -253,6 +254,7 @@ export default function Todo() {
   const handleDelete = async (id: string) => {
     const previous = todos;
     setTodos((current) => current.filter((todo) => todo.id !== id));
+    setSelectedTodo((current) => (current?.id === id ? null : current));
 
     const { error: deleteError } = await supabase.from('todos').delete().eq('id', id);
 
@@ -317,34 +319,80 @@ export default function Todo() {
           <AnimatePresence>
             {todos.map((todo) => (
               <motion.div key={todo.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} layout>
-                <TiltCard glow={!todo.done} className={`transition-all duration-500 ${todo.done ? 'opacity-60 grayscale-[50%]' : ''}`}>
-                  <div className="flex flex-col gap-6 md:flex-row md:items-center">
-                    <div className="flex flex-1 items-center gap-4">
-                      <button onClick={() => void toggleTodo(todo)} className="text-white/50 transition-colors hover:text-white">
+                <TiltCard
+                  glow={!todo.done}
+                  className={`overflow-hidden transition-all duration-500 ${todo.done ? 'opacity-70 grayscale-[28%]' : ''}`}
+                >
+                  <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedTodo(todo)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setSelectedTodo(todo);
+                        }
+                      }}
+                      className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02))] p-5 text-left transition-all hover:border-white/20 hover:bg-[linear-gradient(135deg,rgba(255,255,255,0.1),rgba(255,255,255,0.03))]"
+                    >
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.18),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(251,191,36,0.14),transparent_28%)] opacity-70" />
+                      <div className="relative flex items-start gap-4">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void toggleTodo(todo);
+                          }}
+                          className="mt-1 text-white/50 transition-colors hover:text-white"
+                        >
                         {todo.done ? <CheckCircle2 className="h-8 w-8 text-green-500" /> : <Circle className="h-8 w-8 hover:text-blue-400" />}
-                      </button>
-                      <div>
-                        <h3 className={`text-xl font-bold ${todo.done ? 'line-through text-white/50' : 'text-white/90'}`}>{todo.task}</h3>
-                        <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-white/60">
-                          {renderAssigneeBadges(todo.assignee)}
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            {todo.deadline
-                              ? new Date(todo.deadline).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
-                              : 'Chưa chốt ngày'}
-                          </span>
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.28em] text-white/35">
+                                {todo.done ? 'Đã hoàn thành' : 'Đang theo dõi'}
+                              </p>
+                              <h3 className={`truncate text-xl font-bold ${todo.done ? 'line-through text-white/45' : 'text-white/95'}`}>
+                                {todo.task}
+                              </h3>
+                            </div>
+                            <div className="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1.5 text-sm font-semibold text-orange-300">
+                              {formatCurrency(Number(todo.cost || 0))}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap items-center gap-2.5 text-sm text-white/65">
+                            {renderAssigneeBadges(todo.assignee)}
+                            <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                              <Calendar className="h-4 w-4 text-cyan-300/80" />
+                              {todo.deadline
+                                ? new Date(todo.deadline).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
+                                : 'Chưa chốt ngày'}
+                            </span>
+                            {todo.location ? (
+                              <span className="flex max-w-full items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-white/55">
+                                <MapPin className="h-4 w-4 text-fuchsia-300/80" />
+                                <span className="truncate">{todo.location}</span>
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <div className="mt-5 flex items-center justify-between gap-4">
+                            <p className="text-sm text-white/38">Chạm để xem chi tiết công việc</p>
+                            <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-sm font-medium text-white/70 transition-colors group-hover:border-cyan-300/30 group-hover:text-cyan-100">
+                              Xem chi tiết
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 md:justify-end">
-                      <div className="flex items-center gap-2 rounded-lg border border-orange-500/20 bg-orange-500/10 px-3 py-2 text-orange-400">
-                        <DollarSign className="h-4 w-4" />
-                        <span className="font-semibold">{formatCurrency(Number(todo.cost || 0))}</span>
-                      </div>
-
+                    <div className="flex flex-wrap items-center gap-3 lg:w-[190px] lg:flex-col lg:justify-center">
                       {todo.location ? (
                         <button
+                          type="button"
                           onClick={() => todo.map_url && setSelectedMap(todo.map_url)}
                           className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
                             todo.map_url
@@ -358,15 +406,17 @@ export default function Todo() {
                       ) : null}
 
                       <button
+                        type="button"
                         onClick={() => handleEdit(todo)}
-                        className="rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-sm text-blue-300 transition-colors hover:bg-blue-500/20"
+                        className="rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-sm text-blue-300 transition-colors hover:bg-blue-500/20 lg:w-full"
                       >
                         Sửa
                       </button>
 
                       <button
+                        type="button"
                         onClick={() => void handleDelete(todo.id)}
-                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white lg:w-full"
                       >
                         Xóa
                       </button>
@@ -544,6 +594,99 @@ export default function Todo() {
                 <button onClick={() => void handleSave()} disabled={isSaving} className="rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/30 disabled:opacity-60">
                   {isSaving ? 'Đang lưu...' : editingTodoId ? 'Cập nhật công việc' : 'Lưu công việc'}
                 </button>
+              </div>
+            </motion.div>
+          </>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {selectedTodo ? (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[110] bg-black/75 backdrop-blur-sm"
+              onClick={() => setSelectedTodo(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              className="fixed inset-x-4 top-1/2 z-[111] mx-auto w-auto max-w-2xl -translate-y-1/2 overflow-hidden rounded-[32px] border border-white/10 bg-[radial-gradient(circle_at_top,#1e293b_0%,#0f172a_44%,#020617_100%)] shadow-[0_30px_100px_rgba(0,0,0,0.5)]"
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.16),transparent_26%),radial-gradient(circle_at_bottom_left,rgba(251,191,36,0.14),transparent_22%)]" />
+              <div className="relative p-6 md:p-7">
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.28em] text-white/35">
+                      {selectedTodo.done ? 'Đã hoàn thành' : 'Chi tiết công việc'}
+                    </p>
+                    <h2 className="text-2xl font-bold text-white">{selectedTodo.task}</h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTodo(null)}
+                    className="rounded-full bg-white/5 p-2 text-white/50 transition-colors hover:text-white"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/40">Người thực hiện</p>
+                    <div className="mt-3 flex flex-wrap gap-2">{renderAssigneeBadges(selectedTodo.assignee)}</div>
+                  </div>
+                  <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.06] p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-100/45">Thời gian</p>
+                    <p className="mt-3 text-base font-semibold text-cyan-50">
+                      {selectedTodo.deadline
+                        ? new Date(selectedTodo.deadline).toLocaleString('vi-VN', { dateStyle: 'full', timeStyle: 'short' })
+                        : 'Chưa chốt ngày giờ'}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-amber-300/15 bg-amber-400/[0.06] p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-amber-100/45">Ngân sách dự kiến</p>
+                    <p className="mt-3 text-base font-semibold text-amber-50">{formatCurrency(Number(selectedTodo.cost || 0))}</p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/40">Địa điểm</p>
+                    <p className="mt-3 text-base font-semibold text-white/85">{selectedTodo.location || 'Chưa thêm địa điểm'}</p>
+                  </div>
+                </div>
+
+                {selectedTodo.map_url ? (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMap(selectedTodo.map_url)}
+                    className="mt-4 flex items-center gap-2 rounded-2xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/20"
+                  >
+                    <MapPin className="h-4 w-4" />
+                    Mở bản đồ
+                  </button>
+                ) : null}
+
+                <div className="mt-6 flex flex-wrap justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTodo(null);
+                      handleEdit(selectedTodo);
+                    }}
+                    className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/20"
+                  >
+                    Chỉnh sửa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void toggleTodo(selectedTodo)}
+                    className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20"
+                  >
+                    {selectedTodo.done ? 'Đánh dấu chưa xong' : 'Đánh dấu đã xong'}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </>
