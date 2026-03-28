@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Calendar, CheckCircle2, CheckSquare, Circle, DollarSign, MapPin, Plus, RefreshCcw, X } from 'lucide-react';
+import { Calendar, CalendarDays, CheckCircle2, CheckSquare, Circle, Clock3, DollarSign, MapPin, Plus, RefreshCcw, X } from 'lucide-react';
 import TiltCard from '../components/TiltCard';
 import { supabase } from '../lib/supabase';
 
@@ -18,7 +18,8 @@ type Todo = {
 const emptyForm = {
   task: '',
   assignee: 'Nam',
-  deadline: '',
+  deadlineDate: '',
+  deadlineTime: '',
   cost: '',
   location: '',
   mapUrl: '',
@@ -53,6 +54,27 @@ const toDateTimeLocalValue = (value: string) => {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 };
 
+const formatDeadlineLabel = (date: string, time: string) => {
+  if (!date) return 'Chưa chốt lịch';
+  if (!time) return new Date(`${date}T00:00`).toLocaleDateString('vi-VN', { dateStyle: 'short' });
+  return new Date(`${date}T${time}`).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+};
+
+const combineDeadline = (date: string, time: string) => {
+  if (!date) return null;
+  return new Date(`${date}T${time || '09:00'}`).toISOString();
+};
+
+const parseDeadlineParts = (value: string | null) => {
+  if (!value) {
+    return { deadlineDate: '', deadlineTime: '' };
+  }
+
+  const localValue = toDateTimeLocalValue(value);
+  const [deadlineDate, deadlineTime = ''] = localValue.split('T');
+  return { deadlineDate, deadlineTime: deadlineTime.slice(0, 5) };
+};
+
 const sortTodosByDeadline = (items: Todo[]) =>
   [...items].sort((a, b) => {
     if (!a.deadline && !b.deadline) return 0;
@@ -85,6 +107,7 @@ export default function Todo() {
   const [selectedMap, setSelectedMap] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [isDeadlinePickerOpen, setIsDeadlinePickerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -143,7 +166,7 @@ export default function Todo() {
     const payload = {
       task: form.task.trim(),
       assignee: form.assignee,
-      deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
+      deadline: combineDeadline(form.deadlineDate, form.deadlineTime),
       cost: Number(form.cost || 0),
       location: form.location.trim() || null,
       map_url: form.mapUrl.trim() || null,
@@ -172,7 +195,7 @@ export default function Todo() {
     setForm({
       task: todo.task,
       assignee: todo.assignee,
-      deadline: todo.deadline ? toDateTimeLocalValue(todo.deadline) : '',
+      ...parseDeadlineParts(todo.deadline),
       cost: String(Number(todo.cost || 0)),
       location: todo.location ?? '',
       mapUrl: todo.map_url ?? '',
@@ -193,7 +216,7 @@ export default function Todo() {
       const payload = {
         task: form.task.trim(),
         assignee: form.assignee,
-        deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
+        deadline: combineDeadline(form.deadlineDate, form.deadlineTime),
         cost: Number(form.cost || 0),
         location: form.location.trim() || null,
         map_url: form.mapUrl.trim() || null,
@@ -223,6 +246,7 @@ export default function Todo() {
   const handleCloseForm = () => {
     setIsCreating(false);
     setEditingTodoId(null);
+    setIsDeadlinePickerOpen(false);
     setForm(emptyForm);
   };
 
@@ -404,16 +428,94 @@ export default function Todo() {
                       })}
                     </div>
                   </div>
-                  <div className="relative overflow-hidden rounded-2xl border border-cyan-400/20 bg-[radial-gradient(circle_at_top,#164e63_0%,#0f172a_52%,#020617_100%)] p-4 text-cyan-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_20px_45px_rgba(8,145,178,0.16)]">
+                  <div className="relative overflow-visible rounded-2xl border border-cyan-400/20 bg-[radial-gradient(circle_at_top,#164e63_0%,#0f172a_52%,#020617_100%)] p-4 text-cyan-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_20px_45px_rgba(8,145,178,0.16)]">
                     <div className="absolute inset-x-0 top-0 h-px bg-white/20" />
                     <p className="mb-3 text-sm font-medium uppercase tracking-[0.18em] text-cyan-100/55">Thời gian</p>
-                    <input
-                      type="datetime-local"
-                      value={form.deadline}
-                      onChange={(e) => setForm((current) => ({ ...current, deadline: e.target.value }))}
-                      className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-white focus:border-cyan-300 focus:outline-none [color-scheme:dark]"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setIsDeadlinePickerOpen((current) => !current)}
+                      className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-left transition-colors hover:border-cyan-300/60 hover:bg-black/25"
+                    >
+                      <span className={`truncate ${form.deadlineDate ? 'text-white' : 'text-white/45'}`}>
+                        {formatDeadlineLabel(form.deadlineDate, form.deadlineTime)}
+                      </span>
+                      <CalendarDays className="h-5 w-5 shrink-0 text-cyan-200/80" />
+                    </button>
                     <p className="mt-3 text-xs text-cyan-100/55">Có thể để trống nếu chưa chốt lịch.</p>
+
+                    <AnimatePresence>
+                      {isDeadlinePickerOpen ? (
+                        <motion.div
+                          initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                          className="absolute left-0 right-0 top-[calc(100%+12px)] z-30 overflow-hidden rounded-2xl border border-cyan-300/20 bg-[radial-gradient(circle_at_top,#164e63_0%,#111827_56%,#020617_100%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_24px_60px_rgba(8,145,178,0.18)] backdrop-blur-xl"
+                        >
+                          <div className="absolute inset-x-0 top-0 h-px bg-white/20" />
+                          <div className="grid gap-3">
+                            <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                              <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-cyan-100/55">
+                                <CalendarDays className="h-3.5 w-3.5" />
+                                Ngày
+                              </div>
+                              <input
+                                type="date"
+                                value={form.deadlineDate}
+                                onChange={(e) => setForm((current) => ({ ...current, deadlineDate: e.target.value }))}
+                                className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white focus:border-cyan-300 focus:outline-none [color-scheme:dark]"
+                              />
+                            </div>
+                            <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                              <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-cyan-100/55">
+                                <Clock3 className="h-3.5 w-3.5" />
+                                Giờ
+                              </div>
+                              <input
+                                type="time"
+                                value={form.deadlineTime}
+                                onChange={(e) => setForm((current) => ({ ...current, deadlineTime: e.target.value }))}
+                                className="w-full rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-white focus:border-cyan-300 focus:outline-none [color-scheme:dark]"
+                              />
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {['09:00', '14:00', '19:30'].map((time) => (
+                                <button
+                                  key={time}
+                                  type="button"
+                                  onClick={() => setForm((current) => ({ ...current, deadlineTime: time }))}
+                                  className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                                    form.deadlineTime === time
+                                      ? 'border-cyan-300/50 bg-cyan-400/15 text-cyan-100'
+                                      : 'border-white/10 bg-white/5 text-white/70 hover:bg-white/10'
+                                  }`}
+                                >
+                                  {time}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="flex items-center justify-between gap-3 pt-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setForm((current) => ({ ...current, deadlineDate: '', deadlineTime: '' }));
+                                  setIsDeadlinePickerOpen(false);
+                                }}
+                                className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                              >
+                                Xóa lịch
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setIsDeadlinePickerOpen(false)}
+                                className="rounded-xl border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-100 transition-colors hover:bg-cyan-400/15"
+                              >
+                                Xong
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
                   </div>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
