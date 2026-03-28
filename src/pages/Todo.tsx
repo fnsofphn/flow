@@ -8,7 +8,7 @@ type Todo = {
   id: string;
   task: string;
   assignee: string;
-  deadline: string;
+  deadline: string | null;
   cost: number;
   location: string | null;
   map_url: string | null;
@@ -24,10 +24,27 @@ const emptyForm = {
   mapUrl: '',
 };
 
+const formatCurrency = (amount: number) => `${amount.toLocaleString('vi-VN')} VNĐ`;
+
+const toDateTimeLocalValue = (value: string) => {
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+};
+
+const sortTodosByDeadline = (items: Todo[]) =>
+  [...items].sort((a, b) => {
+    if (!a.deadline && !b.deadline) return 0;
+    if (!a.deadline) return 1;
+    if (!b.deadline) return -1;
+    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+  });
+
 export default function Todo() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [selectedMap, setSelectedMap] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +69,7 @@ export default function Todo() {
       setError(queryError.message);
       setTodos([]);
     } else {
-      setTodos((data as Todo[]) ?? []);
+      setTodos(sortTodosByDeadline((data as Todo[]) ?? []));
     }
 
     setIsLoading(false);
@@ -75,8 +92,8 @@ export default function Todo() {
   };
 
   const handleCreate = async () => {
-    if (!form.task.trim() || !form.deadline) {
-      setError('Hãy nhập tên công việc và thời gian.');
+    if (!form.task.trim()) {
+      setError('Hãy nhập tên công việc.');
       return;
     }
 
@@ -86,7 +103,7 @@ export default function Todo() {
     const payload = {
       task: form.task.trim(),
       assignee: form.assignee,
-      deadline: new Date(form.deadline).toISOString(),
+      deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
       cost: Number(form.cost || 0),
       location: form.location.trim() || null,
       map_url: form.mapUrl.trim() || null,
@@ -102,14 +119,71 @@ export default function Todo() {
     if (insertError) {
       setError(insertError.message);
     } else if (data) {
-      setTodos((current) =>
-        [...current, data as Todo].sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()),
-      );
-      setIsCreating(false);
-      setForm(emptyForm);
+      setTodos((current) => sortTodosByDeadline([...current, data as Todo]));
+      handleCloseForm();
     }
 
     setIsSaving(false);
+  };
+
+  const handleEdit = (todo: Todo) => {
+    setError(null);
+    setEditingTodoId(todo.id);
+    setForm({
+      task: todo.task,
+      assignee: todo.assignee,
+      deadline: todo.deadline ? toDateTimeLocalValue(todo.deadline) : '',
+      cost: String(Number(todo.cost || 0)),
+      location: todo.location ?? '',
+      mapUrl: todo.map_url ?? '',
+    });
+    setIsCreating(true);
+  };
+
+  const handleSave = async () => {
+    if (editingTodoId) {
+      if (!form.task.trim()) {
+        setError('Hãy nhập tên công việc.');
+        return;
+      }
+
+      setIsSaving(true);
+      setError(null);
+
+      const payload = {
+        task: form.task.trim(),
+        assignee: form.assignee,
+        deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
+        cost: Number(form.cost || 0),
+        location: form.location.trim() || null,
+        map_url: form.mapUrl.trim() || null,
+      };
+
+      const previous = todos;
+      setTodos((current) =>
+        sortTodosByDeadline(current.map((todo) => (todo.id === editingTodoId ? { ...todo, ...payload } : todo))),
+      );
+
+      const { error: updateError } = await supabase.from('todos').update(payload).eq('id', editingTodoId);
+
+      if (updateError) {
+        setTodos(previous);
+        setError(updateError.message);
+      } else {
+        handleCloseForm();
+      }
+
+      setIsSaving(false);
+      return;
+    }
+
+    await handleCreate();
+  };
+
+  const handleCloseForm = () => {
+    setIsCreating(false);
+    setEditingTodoId(null);
+    setForm(emptyForm);
   };
 
   const handleDelete = async (id: string) => {
@@ -166,7 +240,7 @@ export default function Todo() {
         </TiltCard>
         <TiltCard className="bg-white/5">
           <p className="text-sm uppercase tracking-[0.2em] text-white/40">Ngân sách</p>
-          <p className="mt-3 text-3xl font-bold text-orange-300">{summary.budget.toLocaleString('vi-VN')}đ</p>
+          <p className="mt-3 text-3xl font-bold text-orange-300">{formatCurrency(summary.budget)}</p>
         </TiltCard>
       </div>
 
@@ -191,7 +265,9 @@ export default function Todo() {
                           <span className="rounded bg-white/10 px-2 py-1 font-medium text-white/80">{todo.assignee}</span>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />
-                            {new Date(todo.deadline).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}
+                            {todo.deadline
+                              ? new Date(todo.deadline).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
+                              : 'Chưa chốt ngày'}
                           </span>
                         </div>
                       </div>
@@ -200,7 +276,7 @@ export default function Todo() {
                     <div className="flex flex-wrap items-center gap-3 md:justify-end">
                       <div className="flex items-center gap-2 rounded-lg border border-orange-500/20 bg-orange-500/10 px-3 py-2 text-orange-400">
                         <DollarSign className="h-4 w-4" />
-                        <span className="font-semibold">{Number(todo.cost || 0).toLocaleString('vi-VN')}đ</span>
+                        <span className="font-semibold">{formatCurrency(Number(todo.cost || 0))}</span>
                       </div>
 
                       {todo.location ? (
@@ -216,6 +292,13 @@ export default function Todo() {
                           <span className="max-w-[150px] truncate font-medium">{todo.location}</span>
                         </button>
                       ) : null}
+
+                      <button
+                        onClick={() => handleEdit(todo)}
+                        className="rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-sm text-blue-300 transition-colors hover:bg-blue-500/20"
+                      >
+                        Sửa
+                      </button>
 
                       <button
                         onClick={() => void handleDelete(todo.id)}
@@ -237,7 +320,7 @@ export default function Todo() {
       <AnimatePresence>
         {isCreating ? (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm" onClick={() => setIsCreating(false)} />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm" onClick={handleCloseForm} />
             <motion.div
               initial={{ opacity: 0, y: '100%' }}
               animate={{ opacity: 1, y: 0 }}
@@ -245,8 +328,8 @@ export default function Todo() {
               className="fixed bottom-0 left-0 right-0 z-[101] max-h-[90vh] overflow-y-auto rounded-t-3xl border border-white/10 bg-gray-900 p-6 shadow-2xl md:left-1/2 md:top-1/2 md:w-[640px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl"
             >
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">Thêm việc mới</h2>
-                <button onClick={() => setIsCreating(false)} className="rounded-full bg-white/5 p-2 text-white/50 hover:text-white">
+                <h2 className="text-2xl font-bold text-white">{editingTodoId ? 'Chỉnh sửa công việc' : 'Thêm việc mới'}</h2>
+                <button onClick={handleCloseForm} className="rounded-full bg-white/5 p-2 text-white/50 hover:text-white">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -268,8 +351,8 @@ export default function Todo() {
               </div>
 
               <div className="mt-6 flex justify-end">
-                <button onClick={() => void handleCreate()} disabled={isSaving} className="rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/30 disabled:opacity-60">
-                  {isSaving ? 'Đang lưu...' : 'Lưu công việc'}
+                <button onClick={() => void handleSave()} disabled={isSaving} className="rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/30 disabled:opacity-60">
+                  {isSaving ? 'Đang lưu...' : editingTodoId ? 'Cập nhật công việc' : 'Lưu công việc'}
                 </button>
               </div>
             </motion.div>
