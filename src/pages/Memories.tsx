@@ -252,21 +252,21 @@ export default function Memories() {
     <div className="space-y-8 pb-24">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="mb-2 flex items-center gap-3 text-4xl font-bold tracking-tight">
+          <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold tracking-tight sm:text-4xl">
             Kỷ niệm của chúng ta
             <Heart className="h-8 w-8 animate-pulse fill-pink-500 text-pink-500" />
           </h1>
-          <p className="text-lg text-white/60">
+          <p className="text-base text-white/60 sm:text-lg">
             Lưu giữ, chỉnh sửa và làm mới những khoảnh khắc đẹp theo cách thật dễ chịu.
           </p>
         </motion.div>
 
-        <div className="flex flex-wrap gap-3">
-          <button onClick={() => void loadMemories()} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/10">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <button onClick={() => void loadMemories()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/10 sm:w-auto">
             <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Làm mới thư viện
           </button>
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-3 font-medium text-white shadow-lg shadow-orange-500/30">
+          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={openCreate} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-3 font-medium text-white shadow-lg shadow-orange-500/30 sm:w-auto">
             <Plus className="h-5 w-5" />
             Thêm kỷ niệm
           </motion.button>
@@ -284,12 +284,12 @@ export default function Memories() {
 
       {!isLoading && featuredMemory ? (
         <>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="relative h-64 w-full cursor-pointer overflow-hidden rounded-3xl md:h-96" onClick={() => setSelectedImage(featuredMemory.image_url)}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="relative h-72 w-full cursor-pointer overflow-hidden rounded-3xl md:h-96" onClick={() => setSelectedImage(featuredMemory.image_url)}>
             <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
             <img src={featuredMemory.image_url} alt={featuredMemory.title} className="absolute inset-0 h-full w-full object-cover transition-transform duration-1000 hover:scale-105" />
-            <button type="button" onClick={(event) => { event.stopPropagation(); openEdit(featuredMemory); }} className="absolute right-6 top-6 z-20 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-4 py-2 text-sm font-medium text-white backdrop-blur-md">
+            <button type="button" onClick={(event) => { event.stopPropagation(); openEdit(featuredMemory); }} className="absolute right-4 top-4 z-20 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-3 py-2 text-sm font-medium text-white backdrop-blur-md sm:right-6 sm:top-6 sm:px-4">
               <PencilLine className="h-4 w-4" />
-              Chỉnh sửa
+              <span className="hidden sm:inline">Chỉnh sửa</span>
             </button>
             <button
               type="button"
@@ -297,18 +297,18 @@ export default function Memories() {
                 event.stopPropagation();
                 void downloadMemoryImage(featuredMemory);
               }}
-              className="absolute right-6 top-20 z-20 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-4 py-2 text-sm font-medium text-white backdrop-blur-md"
+              className="absolute right-4 top-16 z-20 inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-3 py-2 text-sm font-medium text-white backdrop-blur-md sm:right-6 sm:top-20 sm:px-4"
             >
               <Upload className="h-4 w-4" />
-              Tải ảnh về máy
+              <span className="hidden sm:inline">Tải ảnh về máy</span>
             </button>
-            <div className="absolute left-6 top-6 z-20 flex items-center gap-2 rounded-full border border-white/20 bg-white/20 px-4 py-2 backdrop-blur-md">
+            <div className="absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full border border-white/20 bg-white/20 px-3 py-2 backdrop-blur-md sm:left-6 sm:top-6 sm:px-4">
               <Calendar className="h-4 w-4 text-orange-400" />
-              <span className="text-sm font-semibold tracking-wide text-white">KỶ NIỆM NỔI BẬT</span>
+              <span className="text-xs font-semibold tracking-wide text-white sm:text-sm">KỶ NIỆM NỔI BẬT</span>
             </div>
-            <div className="absolute bottom-6 left-6 z-20 max-w-2xl md:bottom-10 md:left-10">
-              <h2 className="mb-4 text-3xl font-bold text-white drop-shadow-lg md:text-5xl">{featuredMemory.title}</h2>
-              <p className="line-clamp-2 text-lg text-white/80 md:text-xl">{featuredMemory.description}</p>
+            <div className="absolute bottom-4 left-4 z-20 max-w-2xl sm:bottom-6 sm:left-6 md:bottom-10 md:left-10">
+              <h2 className="mb-3 text-2xl font-bold text-white drop-shadow-lg sm:text-3xl md:mb-4 md:text-5xl">{featuredMemory.title}</h2>
+              <p className="line-clamp-2 text-base text-white/80 md:text-xl">{featuredMemory.description}</p>
             </div>
           </motion.div>
 
@@ -329,7 +329,7 @@ export default function Memories() {
                       </div>
                     </div>
 
-                    <div className="flex flex-1 flex-col p-6">
+                    <div className="flex flex-1 flex-col p-4 sm:p-6">
                       <div className="mb-2 flex items-start justify-between gap-3">
                         <h4 className="text-xl font-bold text-white/90">{memory.title}</h4>
                         <button type="button" onClick={() => openEdit(memory)} className="rounded-full bg-white/5 p-2 text-white/50 transition-colors hover:text-white">
@@ -350,12 +350,12 @@ export default function Memories() {
 
                       <p className="flex-1 text-sm leading-6 text-white/70">{memory.description}</p>
 
-                      <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
+                      <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
                         <button onClick={() => void handleLike(memory)} className="flex items-center gap-2 text-sm font-medium text-pink-500 transition-colors hover:text-pink-400">
                           <Heart className="h-4 w-4 fill-current" />
                           {memory.likes}
                         </button>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3">
                           <button
                             type="button"
                             onClick={() => void downloadMemoryImage(memory)}
@@ -409,7 +409,7 @@ export default function Memories() {
         {isModalOpen ? (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm" onClick={closeModal} />
-            <motion.div initial={{ opacity: 0, y: '100%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: '100%' }} className="fixed bottom-0 left-0 right-0 z-[101] max-h-[90vh] overflow-y-auto rounded-t-3xl border border-white/10 bg-gray-900 p-6 shadow-2xl md:left-1/2 md:top-1/2 md:w-[720px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl">
+            <motion.div initial={{ opacity: 0, y: '100%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: '100%' }} className="fixed bottom-0 left-0 right-0 z-[101] max-h-[90vh] overflow-y-auto rounded-t-3xl border border-white/10 bg-gray-900 p-4 shadow-2xl sm:p-6 md:left-1/2 md:top-1/2 md:w-[720px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-white">{editingMemory ? 'Chỉnh sửa kỷ niệm' : 'Thêm kỷ niệm mới'}</h2>
                 <button onClick={closeModal} className="rounded-full bg-white/5 p-2 text-white/50 hover:text-white">

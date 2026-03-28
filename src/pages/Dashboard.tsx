@@ -89,13 +89,13 @@ export default function Dashboard() {
     <div className="space-y-8 pb-24">
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="mb-2 text-4xl font-bold tracking-tight">
+          <h1 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl">
             Bảng điều khiển của{' '}
             <span className="bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">
               NamCy
             </span>
           </h1>
-          <p className="text-lg text-white/60">
+          <p className="text-base text-white/60 sm:text-lg">
             Chạm đúng nơi bạn cần: kỷ niệm, việc cần làm, tài chính và hộp tâm thư.
           </p>
         </motion.div>
@@ -103,7 +103,7 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/10 px-4 py-2 backdrop-blur-md"
+          className="inline-flex items-center gap-3 self-start rounded-2xl border border-white/10 bg-white/10 px-4 py-2 backdrop-blur-md sm:self-auto sm:rounded-full"
         >
           <Heart className="h-5 w-5 animate-pulse fill-pink-500 text-pink-500" />
           <span className="font-medium text-white/90">Hôm nay ưu tiên lưu lại điều tốt đẹp</span>
@@ -196,7 +196,7 @@ export default function Dashboard() {
                 type="button"
                 onClick={handleQuickLetter}
                 disabled={!quickLetter.trim()}
-                className="rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-3 font-semibold text-white shadow-lg shadow-rose-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-3 font-semibold text-white shadow-lg shadow-rose-500/30 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 Chuyển vào hũ bí ẩn
               </button>
@@ -208,7 +208,7 @@ export default function Dashboard() {
           <button
             type="button"
             onClick={() => navigate('/memories')}
-            className="group relative h-full min-h-[320px] w-full text-left"
+            className="group relative h-full min-h-[280px] w-full text-left sm:min-h-[320px]"
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
             {featuredMemory ? (
@@ -222,7 +222,7 @@ export default function Dashboard() {
             )}
             <div className="relative z-10 flex h-full flex-col justify-end p-6">
               <p className="text-sm uppercase tracking-[0.28em] text-orange-300">Album kỷ niệm</p>
-              <h3 className="mt-3 text-3xl font-bold text-white">
+              <h3 className="mt-3 text-2xl font-bold text-white sm:text-3xl">
                 {featuredMemory?.title ?? 'Mở ngay những khoảnh khắc đẹp nhất'}
               </h3>
               <p className="mt-3 max-w-md text-white/70">

@@ -268,17 +268,17 @@ export default function Todo() {
     <div className="space-y-8 pb-24">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="mb-2 flex items-center gap-3 text-4xl font-bold tracking-tight">
+          <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold tracking-tight sm:text-4xl">
             Việc cần làm
             <CheckSquare className="h-8 w-8 text-blue-400" />
           </h1>
-          <p className="text-lg text-white/60">Theo dõi danh sách công việc chung theo thời gian thực.</p>
+          <p className="text-base text-white/60 sm:text-lg">Theo dõi danh sách công việc chung theo thời gian thực.</p>
         </motion.div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <button
             onClick={() => void loadTodos()}
-            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/10"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/10 sm:w-auto"
           >
             <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Tải lại
@@ -287,7 +287,7 @@ export default function Todo() {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => setIsCreating(true)}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-3 font-medium text-white shadow-lg shadow-blue-500/30"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-3 font-medium text-white shadow-lg shadow-blue-500/30 sm:w-auto"
           >
             <Plus className="h-5 w-5" />
             Thêm việc mới
@@ -379,7 +379,7 @@ export default function Todo() {
                             ) : null}
                           </div>
 
-                          <div className="mt-5 flex items-center justify-between gap-4">
+                          <div className="mt-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-sm text-white/38">Chạm để xem chi tiết công việc</p>
                             <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-sm font-medium text-white/70 transition-colors group-hover:border-cyan-300/30 group-hover:text-cyan-100">
                               Xem chi tiết
@@ -394,7 +394,7 @@ export default function Todo() {
                         <button
                           type="button"
                           onClick={() => todo.map_url && setSelectedMap(todo.map_url)}
-                          className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
+                        className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 transition-colors sm:w-auto ${
                             todo.map_url
                               ? 'border-blue-500/20 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
                               : 'cursor-default border-white/10 bg-white/5 text-white/50'
@@ -408,7 +408,7 @@ export default function Todo() {
                       <button
                         type="button"
                         onClick={() => handleEdit(todo)}
-                        className="rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-sm text-blue-300 transition-colors hover:bg-blue-500/20 lg:w-full"
+                        className="w-full rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-sm text-blue-300 transition-colors hover:bg-blue-500/20 lg:w-full"
                       >
                         Sửa
                       </button>
@@ -416,7 +416,7 @@ export default function Todo() {
                       <button
                         type="button"
                         onClick={() => void handleDelete(todo.id)}
-                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white lg:w-full"
+                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white lg:w-full"
                       >
                         Xóa
                       </button>
@@ -439,7 +439,7 @@ export default function Todo() {
               initial={{ opacity: 0, y: '100%' }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: '100%' }}
-              className="fixed bottom-0 left-0 right-0 z-[101] max-h-[90vh] overflow-y-auto rounded-t-3xl border border-white/10 bg-gray-900 p-6 shadow-2xl md:left-1/2 md:top-1/2 md:w-[640px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl"
+              className="fixed bottom-0 left-0 right-0 z-[101] max-h-[90vh] overflow-y-auto rounded-t-3xl border border-white/10 bg-gray-900 p-4 shadow-2xl sm:p-6 md:left-1/2 md:top-1/2 md:w-[640px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl"
             >
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-white">{editingTodoId ? 'Chỉnh sửa công việc' : 'Thêm việc mới'}</h2>
@@ -614,7 +614,7 @@ export default function Todo() {
               initial={{ opacity: 0, y: 24, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 18, scale: 0.98 }}
-              className="fixed inset-x-4 top-1/2 z-[111] mx-auto w-auto max-w-2xl -translate-y-1/2 overflow-hidden rounded-[32px] border border-white/10 bg-[radial-gradient(circle_at_top,#1e293b_0%,#0f172a_44%,#020617_100%)] shadow-[0_30px_100px_rgba(0,0,0,0.5)]"
+              className="fixed inset-x-3 top-1/2 z-[111] mx-auto w-auto max-w-2xl -translate-y-1/2 overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,#1e293b_0%,#0f172a_44%,#020617_100%)] shadow-[0_30px_100px_rgba(0,0,0,0.5)] sm:inset-x-4 sm:rounded-[32px]"
             >
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.16),transparent_26%),radial-gradient(circle_at_bottom_left,rgba(251,191,36,0.14),transparent_22%)]" />
               <div className="relative p-6 md:p-7">

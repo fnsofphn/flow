@@ -2,6 +2,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   CalendarHeart,
+  Calculator,
   CheckSquare,
   FileSignature,
   Heart,
@@ -50,6 +51,13 @@ export const appRoutes: AppRoute[] = [
     icon: CheckSquare,
     nav: true,
     component: lazy(() => import('@/pages/Todo')),
+  },
+  {
+    path: '/cy-work',
+    label: 'Giúp Cy làm việc',
+    icon: Calculator,
+    nav: true,
+    component: lazy(() => import('@/pages/CyWorkHelper')),
   },
   {
     path: '/date-planner',

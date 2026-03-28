@@ -155,8 +155,8 @@ export default function Finance() {
     <div className="space-y-8 pb-24">
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="mb-2 text-4xl font-bold tracking-tight">Quản lý tài chính</h1>
-          <p className="text-lg text-white/60">
+          <h1 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl">Quản lý tài chính</h1>
+          <p className="text-base text-white/60 sm:text-lg">
             Ưu tiên nhập thật nhanh: chọn loại giao dịch, bấm số tiền, thêm lý do rồi lưu.
           </p>
         </motion.div>
@@ -164,7 +164,7 @@ export default function Finance() {
         <button
           type="button"
           onClick={() => void loadEntries()}
-          className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/10"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/10 sm:w-auto"
         >
           <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           Làm mới dữ liệu
@@ -362,7 +362,7 @@ export default function Finance() {
               return (
                 <div
                   key={entry.id}
-                  className="flex items-start justify-between gap-4 rounded-2xl border border-white/10 bg-black/10 px-4 py-4"
+                  className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-black/10 px-4 py-4 sm:flex-row sm:items-start sm:justify-between"
                 >
                   <div className="flex items-start gap-3">
                     <div className={`rounded-2xl p-3 ${isIncome ? 'bg-emerald-500/15' : 'bg-rose-500/15'}`}>
@@ -389,7 +389,7 @@ export default function Finance() {
                     </div>
                   </div>
 
-                  <p className={`text-right text-lg font-bold ${isIncome ? 'text-emerald-300' : 'text-rose-300'}`}>
+                  <p className={`text-left text-lg font-bold sm:text-right ${isIncome ? 'text-emerald-300' : 'text-rose-300'}`}>
                     {isIncome ? '+' : '-'}
                     {formatCurrency(Number(entry.amount))}
                   </p>
