@@ -83,14 +83,14 @@ const assigneeOptions = [
   },
   {
     value: 'Nam & Cy',
-    title: 'Ca hai',
+    title: 'Cả hai',
     className:
       'border-amber-300/30 bg-[radial-gradient(circle_at_top,#fbbf24_0%,#7c2d12_42%,#1f2937_100%)] text-amber-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_20px_45px_rgba(251,191,36,0.18)]',
   },
 ] as const;
 
 const reactionOptions: { value: ReactionName; emoji: string; label: string }[] = [
-  { value: 'love', emoji: 'LOVE', label: 'Tim' },
+  { value: 'love', emoji: '❤', label: 'Tim' },
   { value: 'haha', emoji: 'HAHA', label: 'Haha' },
 ];
 
@@ -108,7 +108,7 @@ const toDateTimeLocalValue = (value: string) => {
 };
 
 const formatDeadlineLabel = (date: string, time: string) => {
-  if (!date) return 'Chua chot lich';
+  if (!date) return 'Chưa chốt lịch';
   if (!time) return new Date(`${date}T00:00`).toLocaleDateString('vi-VN', { dateStyle: 'short' });
   return new Date(`${date}T${time}`).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 };
@@ -209,17 +209,16 @@ export default function Todo() {
   const [todoComments, setTodoComments] = useState<TodoComment[]>([]);
   const [commentReactions, setCommentReactions] = useState<TodoCommentReaction[]>([]);
   const [selectedMap, setSelectedMap] = useState<string | null>(null);
-  const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [isDeadlinePickerOpen, setIsDeadlinePickerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isCommentsLoading, setIsCommentsLoading] = useState(false);
-  const [isCommentSaving, setIsCommentSaving] = useState(false);
+  const [commentSaveTarget, setCommentSaveTarget] = useState<string | null>(null);
   const [isReactionSaving, setIsReactionSaving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [commentDraft, setCommentDraft] = useState('');
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [reactorId, setReactorId] = useState('');
@@ -232,7 +231,22 @@ export default function Todo() {
     return { completed, budget };
   }, [todos]);
 
-  const commentTree = useMemo(() => buildCommentTree(todoComments), [todoComments]);
+  const commentTreeByTodo = useMemo(() => {
+    const groups = new Map<string, TodoComment[]>();
+
+    todoComments.forEach((comment) => {
+      const bucket = groups.get(comment.todo_id) ?? [];
+      bucket.push(comment);
+      groups.set(comment.todo_id, bucket);
+    });
+
+    const treeMap = new Map<string, TodoCommentNode[]>();
+    groups.forEach((comments, todoId) => {
+      treeMap.set(todoId, buildCommentTree(comments));
+    });
+
+    return treeMap;
+  }, [todoComments]);
 
   const reactionLookup = useMemo(() => {
     const map = new Map<string, ReactionSummary>();
@@ -254,6 +268,82 @@ export default function Todo() {
     return map;
   }, [commentReactions, reactorId, todoComments]);
 
+  const loadCommentData = async (todoIds: string[]) => {
+    if (!todoIds.length) {
+      setTodoComments([]);
+      setCommentReactions([]);
+      return;
+    }
+
+    setIsCommentsLoading(true);
+
+    let loadedComments: TodoComment[] = [];
+    const commentsResult = await supabase
+      .from('todo_comments')
+      .select('id, todo_id, parent_id, author, content, created_at')
+      .in('todo_id', todoIds)
+      .order('created_at', { ascending: true });
+
+    if (commentsResult.error) {
+      if (isSchemaMismatchError(commentsResult.error.message)) {
+        const fallbackComments = await supabase
+          .from('todo_comments')
+          .select('id, todo_id, content, created_at')
+          .in('todo_id', todoIds)
+          .order('created_at', { ascending: true });
+
+        if (fallbackComments.error) {
+          setError(fallbackComments.error.message);
+          setTodoComments([]);
+          setCommentReactions([]);
+          setIsCommentsLoading(false);
+          return;
+        }
+
+        loadedComments = ((fallbackComments.data as Omit<TodoComment, 'author' | 'parent_id'>[]) ?? []).map((comment) => ({
+          ...comment,
+          parent_id: null,
+          author: 'Bạn',
+        }));
+        setTodoComments(loadedComments);
+        setCommentReactions([]);
+        setIsCommentsLoading(false);
+        return;
+      }
+
+      setError(commentsResult.error.message);
+      setTodoComments([]);
+      setCommentReactions([]);
+      setIsCommentsLoading(false);
+      return;
+    }
+
+    loadedComments = (commentsResult.data as TodoComment[]) ?? [];
+    setTodoComments(loadedComments);
+
+    if (!loadedComments.length) {
+      setCommentReactions([]);
+      setIsCommentsLoading(false);
+      return;
+    }
+
+    const reactionsResult = await supabase
+      .from('todo_comment_reactions')
+      .select('id, comment_id, reaction, actor_id, created_at')
+      .in('comment_id', loadedComments.map((comment) => comment.id));
+
+    if (reactionsResult.error) {
+      if (!isSchemaMismatchError(reactionsResult.error.message)) {
+        setError(reactionsResult.error.message);
+      }
+      setCommentReactions([]);
+    } else {
+      setCommentReactions((reactionsResult.data as TodoCommentReaction[]) ?? []);
+    }
+
+    setIsCommentsLoading(false);
+  };
+
   const loadTodos = async () => {
     setIsLoading(true);
     setError(null);
@@ -266,8 +356,12 @@ export default function Todo() {
     if (queryError) {
       setError(queryError.message);
       setTodos([]);
+      setTodoComments([]);
+      setCommentReactions([]);
     } else {
-      setTodos(sortTodosByDeadline((data as Todo[]) ?? []));
+      const nextTodos = sortTodosByDeadline((data as Todo[]) ?? []);
+      setTodos(nextTodos);
+      await loadCommentData(nextTodos.map((todo) => todo.id));
     }
 
     setIsLoading(false);
@@ -280,81 +374,6 @@ export default function Todo() {
   useEffect(() => {
     setReactorId(getTodoActorId());
   }, []);
-
-  useEffect(() => {
-    const loadComments = async () => {
-      if (!selectedTodo) {
-        setTodoComments([]);
-        setCommentReactions([]);
-        setCommentDraft('');
-        setReplyDrafts({});
-        setReplyingToId(null);
-        return;
-      }
-
-      setIsCommentsLoading(true);
-
-      let loadedComments: TodoComment[] = [];
-      const commentsResult = await supabase
-        .from('todo_comments')
-        .select('id, todo_id, parent_id, author, content, created_at')
-        .eq('todo_id', selectedTodo.id)
-        .order('created_at', { ascending: true });
-
-      if (commentsResult.error) {
-        if (isSchemaMismatchError(commentsResult.error.message)) {
-          const fallbackComments = await supabase
-            .from('todo_comments')
-            .select('id, todo_id, content, created_at')
-            .eq('todo_id', selectedTodo.id)
-            .order('created_at', { ascending: true });
-
-          if (fallbackComments.error) {
-            setError(fallbackComments.error.message);
-            setTodoComments([]);
-          } else {
-            loadedComments = ((fallbackComments.data as Omit<TodoComment, 'author' | 'parent_id'>[]) ?? []).map((comment) => ({
-              ...comment,
-              parent_id: null,
-              author: 'Ban',
-            }));
-            setTodoComments(loadedComments);
-          }
-
-          setCommentReactions([]);
-        } else {
-          setError(commentsResult.error.message);
-          setTodoComments([]);
-          setCommentReactions([]);
-        }
-      } else {
-        loadedComments = (commentsResult.data as TodoComment[]) ?? [];
-        setTodoComments(loadedComments);
-
-        if (loadedComments.length) {
-          const reactionsResult = await supabase
-            .from('todo_comment_reactions')
-            .select('id, comment_id, reaction, actor_id, created_at')
-            .in('comment_id', loadedComments.map((comment) => comment.id));
-
-          if (reactionsResult.error) {
-            if (!isSchemaMismatchError(reactionsResult.error.message)) {
-              setError(reactionsResult.error.message);
-            }
-            setCommentReactions([]);
-          } else {
-            setCommentReactions((reactionsResult.data as TodoCommentReaction[]) ?? []);
-          }
-        } else {
-          setCommentReactions([]);
-        }
-      }
-
-      setIsCommentsLoading(false);
-    };
-
-    void loadComments();
-  }, [selectedTodo]);
 
   const toggleTodo = async (todo: Todo) => {
     const nextDone = !todo.done;
@@ -370,7 +389,7 @@ export default function Todo() {
 
   const handleCreate = async () => {
     if (!form.task.trim()) {
-      setError('Hay nhap ten cong viec.');
+      setError('Hãy nhập tên công việc.');
       return;
     }
 
@@ -420,7 +439,7 @@ export default function Todo() {
   const handleSave = async () => {
     if (editingTodoId) {
       if (!form.task.trim()) {
-        setError('Hay nhap ten cong viec.');
+      setError('Hãy nhập tên công việc.');
         return;
       }
 
@@ -464,15 +483,6 @@ export default function Todo() {
     setForm(emptyForm);
   };
 
-  const handleCloseDetails = () => {
-    setSelectedTodo(null);
-    setTodoComments([]);
-    setCommentReactions([]);
-    setCommentDraft('');
-    setReplyDrafts({});
-    setReplyingToId(null);
-  };
-
   const spawnReactionBurst = (reaction: ReactionName, element: HTMLElement) => {
     const rect = element.getBoundingClientRect();
     const emoji = reactionOptions.find((option) => option.value === reaction)?.emoji ?? '?';
@@ -495,22 +505,22 @@ export default function Todo() {
     }, 1400);
   };
 
-  const handleAddComment = async (parentId: string | null = null) => {
-    const draft = parentId ? (replyDrafts[parentId] ?? '') : commentDraft;
+  const handleAddComment = async (todoId: string, parentId: string | null = null) => {
+    const draft = parentId ? (replyDrafts[parentId] ?? '') : (commentDrafts[todoId] ?? '');
 
-    if (!selectedTodo || !draft.trim()) {
+    if (!draft.trim()) {
       return;
     }
 
-    setIsCommentSaving(true);
+    setCommentSaveTarget(parentId ?? todoId);
     setError(null);
 
     const insertResult = await supabase
       .from('todo_comments')
       .insert({
-        todo_id: selectedTodo.id,
+        todo_id: todoId,
         parent_id: parentId,
-        author: 'Ban',
+        author: 'Bạn',
         content: draft.trim(),
       })
       .select('id, todo_id, parent_id, author, content, created_at')
@@ -521,7 +531,7 @@ export default function Todo() {
         const fallbackResult = await supabase
           .from('todo_comments')
           .insert({
-            todo_id: selectedTodo.id,
+            todo_id: todoId,
             content: draft.trim(),
           })
           .select('id, todo_id, content, created_at')
@@ -535,13 +545,13 @@ export default function Todo() {
             {
               ...(fallbackResult.data as Omit<TodoComment, 'author' | 'parent_id'>),
               parent_id: null,
-              author: 'Ban',
+              author: 'Bạn',
             },
           ]);
-          setCommentDraft('');
+          setCommentDrafts((current) => ({ ...current, [todoId]: '' }));
         }
       } else {
-        setError(parentId ? 'Hay chay migration comment moi de dung tra loi nhieu tang.' : insertResult.error.message);
+        setError(parentId ? 'Hãy chạy migration comment mới để dùng trả lời nhiều tầng.' : insertResult.error.message);
       }
     } else if (insertResult.data) {
       setTodoComments((current) => [...current, insertResult.data as TodoComment]);
@@ -549,11 +559,11 @@ export default function Todo() {
         setReplyDrafts((current) => ({ ...current, [parentId]: '' }));
         setReplyingToId(null);
       } else {
-        setCommentDraft('');
+        setCommentDrafts((current) => ({ ...current, [todoId]: '' }));
       }
     }
 
-    setIsCommentSaving(false);
+    setCommentSaveTarget(null);
   };
 
   const handleToggleReaction = async (
@@ -580,7 +590,7 @@ export default function Todo() {
 
       if (deleteError) {
         setCommentReactions((current) => [...current, existingReaction]);
-        setError(isSchemaMismatchError(deleteError.message) ? 'Hay chay migration reaction moi de bat react comment.' : deleteError.message);
+        setError(isSchemaMismatchError(deleteError.message) ? 'Hãy chạy migration reaction mới để bật react comment.' : deleteError.message);
       }
     } else {
       const optimisticReaction: TodoCommentReaction = {
@@ -605,7 +615,7 @@ export default function Todo() {
 
       if (insertError) {
         setCommentReactions((current) => current.filter((item) => item.id !== optimisticReaction.id));
-        setError(isSchemaMismatchError(insertError.message) ? 'Hay chay migration reaction moi de bat react comment.' : insertError.message);
+        setError(isSchemaMismatchError(insertError.message) ? 'Hãy chạy migration reaction mới để bật react comment.' : insertError.message);
       } else if (data) {
         setCommentReactions((current) =>
           current.map((item) => (item.id === optimisticReaction.id ? (data as TodoCommentReaction) : item)),
@@ -619,22 +629,26 @@ export default function Todo() {
 
   const handleDelete = async (id: string) => {
     const previous = todos;
+    const commentIds = todoComments.filter((comment) => comment.todo_id === id).map((comment) => comment.id);
     setTodos((current) => current.filter((todo) => todo.id !== id));
-    setSelectedTodo((current) => (current?.id === id ? null : current));
+    setTodoComments((current) => current.filter((comment) => comment.todo_id !== id));
+    setCommentReactions((current) => current.filter((reaction) => !commentIds.includes(reaction.comment_id)));
 
     const { error: deleteError } = await supabase.from('todos').delete().eq('id', id);
 
     if (deleteError) {
       setTodos(previous);
       setError(deleteError.message);
+      await loadCommentData(previous.map((todo) => todo.id));
     }
   };
 
-  const renderCommentNode = (comment: TodoCommentNode, depth = 0): JSX.Element => {
+  const renderCommentNode = (todoId: string, comment: TodoCommentNode, depth = 0): JSX.Element => {
     const summary = reactionLookup.get(comment.id) ?? createReactionSummary();
     const isReplying = replyingToId === comment.id;
     const replyDraft = replyDrafts[comment.id] ?? '';
     const indent = Math.min(depth, 4) * 18;
+    const isReplySaving = commentSaveTarget === comment.id;
 
     return (
       <div key={comment.id} className="space-y-3" style={{ marginLeft: indent }}>
@@ -675,7 +689,7 @@ export default function Todo() {
               onClick={() => setReplyingToId((current) => (current === comment.id ? null : comment.id))}
               className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/65 transition-colors hover:bg-white/[0.08]"
             >
-              {isReplying ? 'An tra loi' : 'Tra loi'}
+              {isReplying ? 'Ẩn trả lời' : 'Trả lời'}
             </button>
           </div>
 
@@ -697,11 +711,11 @@ export default function Todo() {
                   <div className="flex justify-end">
                     <button
                       type="button"
-                      onClick={() => void handleAddComment(comment.id)}
-                      disabled={isCommentSaving || !replyDraft.trim()}
+                      onClick={() => void handleAddComment(todoId, comment.id)}
+                      disabled={isReplySaving || !replyDraft.trim()}
                       className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {isCommentSaving ? 'Dang gui...' : 'Gui tra loi'}
+                      {isReplySaving ? 'Đang gửi...' : 'Gửi trả lời'}
                     </button>
                   </div>
                 </div>
@@ -712,7 +726,7 @@ export default function Todo() {
 
         {comment.replies.length ? (
           <div className="space-y-3 border-l border-white/10 pl-3">
-            {comment.replies.map((reply) => renderCommentNode(reply, depth + 1))}
+            {comment.replies.map((reply) => renderCommentNode(todoId, reply, depth + 1))}
           </div>
         ) : null}
       </div>
@@ -724,10 +738,10 @@ export default function Todo() {
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            Viec can lam
+            Việc cần làm
             <CheckSquare className="h-8 w-8 text-blue-400" />
           </h1>
-          <p className="text-base text-white/60 sm:text-lg">Theo doi danh sach cong viec chung theo thoi gian thuc.</p>
+          <p className="text-base text-white/60 sm:text-lg">Theo dõi danh sách công việc chung theo thời gian thực.</p>
         </motion.div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -736,7 +750,7 @@ export default function Todo() {
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/10 sm:w-auto"
           >
             <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Tai lai
+            Tải lại
           </button>
           <motion.button
             whileHover={{ scale: 1.03 }}
@@ -745,18 +759,18 @@ export default function Todo() {
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-3 font-medium text-white shadow-lg shadow-blue-500/30 sm:w-auto"
           >
             <Plus className="h-5 w-5" />
-            Them viec moi
+            Thêm việc mới
           </motion.button>
         </div>
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">
         <TiltCard className="bg-white/5">
-          <p className="text-sm uppercase tracking-[0.2em] text-white/40">Tong viec</p>
+          <p className="text-sm uppercase tracking-[0.2em] text-white/40">Tổng việc</p>
           <p className="mt-3 text-3xl font-bold text-white">{todos.length}</p>
         </TiltCard>
         <TiltCard className="bg-white/5">
-          <p className="text-sm uppercase tracking-[0.2em] text-white/40">Da xong</p>
+          <p className="text-sm uppercase tracking-[0.2em] text-white/40">Đã xong</p>
           <p className="mt-3 text-3xl font-bold text-emerald-300">{summary.completed}</p>
         </TiltCard>
         <TiltCard className="bg-white/5">
@@ -768,137 +782,72 @@ export default function Todo() {
       {error ? <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
 
       {isLoading ? (
-        <TiltCard className="text-center text-white/60">Dang tai danh sach cong viec...</TiltCard>
+        <TiltCard className="text-center text-white/60">Đang tải danh sách công việc...</TiltCard>
       ) : (
         <div className="grid grid-cols-1 gap-4">
           <AnimatePresence>
-            {todos.map((todo) => (
-              <motion.div key={todo.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} layout>
-                <TiltCard
-                  glow={!todo.done}
-                  className={`overflow-hidden transition-all duration-500 ${todo.done ? 'opacity-70 grayscale-[28%]' : ''}`}
-                >
-                  <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setSelectedTodo((current) => (current?.id === todo.id ? null : todo))}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          setSelectedTodo((current) => (current?.id === todo.id ? null : todo));
-                        }
-                      }}
-                      className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02))] p-5 text-left transition-all hover:border-white/20 hover:bg-[linear-gradient(135deg,rgba(255,255,255,0.1),rgba(255,255,255,0.03))]"
-                    >
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.18),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(251,191,36,0.14),transparent_28%)] opacity-70" />
-                      <div className="relative flex items-start gap-4">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            void toggleTodo(todo);
-                          }}
-                          className="mt-1 text-white/50 transition-colors hover:text-white"
-                        >
-                        {todo.done ? <CheckCircle2 className="h-8 w-8 text-green-500" /> : <Circle className="h-8 w-8 hover:text-blue-400" />}
-                        </button>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.28em] text-white/35">
-                                {todo.done ? 'Da hoan thanh' : 'Dang theo doi'}
-                              </p>
-                              <h3 className={`truncate text-xl font-bold ${todo.done ? 'line-through text-white/45' : 'text-white/95'}`}>
-                                {todo.task}
-                              </h3>
-                            </div>
-                            <div className="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1.5 text-sm font-semibold text-orange-300">
-                              {formatCurrency(Number(todo.cost || 0))}
-                            </div>
-                          </div>
+            {todos.map((todo) => {
+              const todoCommentTree = commentTreeByTodo.get(todo.id) ?? [];
+              const rootDraft = commentDrafts[todo.id] ?? '';
+              const isRootSaving = commentSaveTarget === todo.id;
+              const totalCommentCount = todoComments.filter((comment) => comment.todo_id === todo.id).length;
 
-                          <div className="mt-4 flex flex-wrap items-center gap-2.5 text-sm text-white/65">
-                            {renderAssigneeBadges(todo.assignee)}
-                            <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
-                              <Calendar className="h-4 w-4 text-cyan-300/80" />
-                              {todo.deadline
-                                ? new Date(todo.deadline).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
-                                : 'Chua chot ngay'}
-                            </span>
-                            {todo.location ? (
-                              <span className="flex max-w-full items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-white/55">
-                                <MapPin className="h-4 w-4 text-fuchsia-300/80" />
-                                <span className="truncate">{todo.location}</span>
+              return (
+                <motion.div key={todo.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} layout>
+                  <TiltCard glow={!todo.done} className={`overflow-hidden transition-all duration-500 ${todo.done ? 'opacity-70 grayscale-[28%]' : ''}`}>
+                    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.95fr)_190px]">
+                      <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02))] p-5">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.18),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(251,191,36,0.14),transparent_28%)] opacity-70" />
+                        <div className="relative flex items-start gap-4">
+                          <button
+                            type="button"
+                            onClick={() => void toggleTodo(todo)}
+                            className="mt-1 text-white/50 transition-colors hover:text-white"
+                          >
+                            {todo.done ? <CheckCircle2 className="h-8 w-8 text-green-500" /> : <Circle className="h-8 w-8 hover:text-blue-400" />}
+                          </button>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.28em] text-white/35">
+                                  {todo.done ? 'Đã hoàn thành' : 'Đang theo dõi'}
+                                </p>
+                                <h3 className={`truncate text-xl font-bold ${todo.done ? 'line-through text-white/45' : 'text-white/95'}`}>
+                                  {todo.task}
+                                </h3>
+                              </div>
+                              <div className="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1.5 text-sm font-semibold text-orange-300">
+                                {formatCurrency(Number(todo.cost || 0))}
+                              </div>
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap items-center gap-2.5 text-sm text-white/65">
+                              {renderAssigneeBadges(todo.assignee)}
+                              <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                                <Calendar className="h-4 w-4 text-cyan-300/80" />
+                                {todo.deadline
+                                  ? new Date(todo.deadline).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
+                                  : 'Chưa chốt ngày'}
                               </span>
-                            ) : null}
-                          </div>
+                              {todo.location ? (
+                                <span className="flex max-w-full items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-white/55">
+                                  <MapPin className="h-4 w-4 text-fuchsia-300/80" />
+                                  <span className="truncate">{todo.location}</span>
+                                </span>
+                              ) : null}
+                            </div>
 
-                          <div className="mt-5 flex justify-end">
-                            <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-sm font-medium text-white/70 transition-colors group-hover:border-cyan-300/30 group-hover:text-cyan-100">
-                              {selectedTodo?.id === todo.id ? 'An chi tiet' : 'Chi tiet'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-3 lg:w-[190px] lg:flex-col lg:justify-center">
-                      {todo.location ? (
-                        <button
-                          type="button"
-                          onClick={() => todo.map_url && setSelectedMap(todo.map_url)}
-                        className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 transition-colors sm:w-auto ${
-                            todo.map_url
-                              ? 'border-blue-500/20 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
-                              : 'cursor-default border-white/10 bg-white/5 text-white/50'
-                          }`}
-                        >
-                          <MapPin className="h-4 w-4" />
-                          <span className="max-w-[150px] truncate font-medium">{todo.location}</span>
-                        </button>
-                      ) : null}
-
-                      <button
-                        type="button"
-                        onClick={() => handleEdit(todo)}
-                        className="w-full rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-sm text-blue-300 transition-colors hover:bg-blue-500/20 lg:w-full"
-                      >
-                        Sua
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => void handleDelete(todo.id)}
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white lg:w-full"
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  </div>
-
-                  <AnimatePresence initial={false}>
-                    {selectedTodo?.id === todo.id ? (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0, y: 8 }}
-                        animate={{ opacity: 1, height: 'auto', y: 0 }}
-                        exit={{ opacity: 0, height: 0, y: -6 }}
-                        transition={{ duration: 0.28, ease: 'easeOut' }}
-                        className="overflow-hidden"
-                      >
-                        <div className="mt-4 grid gap-5 border-t border-white/10 pt-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
-                          <div className="space-y-4">
-                            <div className="grid gap-4 md:grid-cols-2">
+                            <div className="mt-5 grid gap-4 md:grid-cols-2">
                               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Nguoi thuc hien</p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Người thực hiện</p>
                                 <div className="mt-3 flex flex-wrap gap-2">{renderAssigneeBadges(todo.assignee)}</div>
                               </div>
                               <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.06] p-4">
-                                <p className="text-xs uppercase tracking-[0.2em] text-cyan-100/45">Thoi gian</p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-cyan-100/45">Thời gian</p>
                                 <p className="mt-3 text-base font-semibold text-cyan-50">
                                   {todo.deadline
                                     ? new Date(todo.deadline).toLocaleString('vi-VN', { dateStyle: 'full', timeStyle: 'short' })
-                                    : 'Chua chot ngay gio'}
+                                    : 'Chưa chốt ngày giờ'}
                                 </p>
                               </div>
                               <div className="rounded-2xl border border-amber-300/15 bg-amber-400/[0.06] p-4">
@@ -906,95 +855,105 @@ export default function Todo() {
                                 <p className="mt-3 text-base font-semibold text-amber-50">{formatCurrency(Number(todo.cost || 0))}</p>
                               </div>
                               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Dia diem</p>
-                                <p className="mt-3 text-base font-semibold text-white/85">{todo.location || 'Chua them dia diem'}</p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Địa điểm</p>
+                                <p className="mt-3 text-base font-semibold text-white/85">{todo.location || 'Chưa thêm địa điểm'}</p>
                               </div>
-                            </div>
-
-                            {todo.map_url ? (
-                              <button
-                                type="button"
-                                onClick={() => setSelectedMap(todo.map_url)}
-                                className="flex items-center gap-2 rounded-2xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/20"
-                              >
-                                <MapPin className="h-4 w-4" />
-                                Mo ban do
-                              </button>
-                            ) : null}
-
-                            <div className="flex flex-wrap gap-3 pt-1">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  handleCloseDetails();
-                                  handleEdit(todo);
-                                }}
-                                className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/20"
-                              >
-                                Chinh sua
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void toggleTodo(todo)}
-                                className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20"
-                              >
-                                {todo.done ? 'Danh dau chua xong' : 'Danh dau da xong'}
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-4 md:p-5">
-                            <div className="mb-4 flex items-center justify-between gap-3">
-                              <div>
-                                <p className="text-[11px] uppercase tracking-[0.26em] text-white/35">Comment</p>
-                                <h3 className="mt-2 text-xl font-semibold text-white">Trao doi cong viec</h3>
-                              </div>
-                              <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/60">
-                                {todoComments.length}
-                              </div>
-                            </div>
-
-                            <div className="space-y-3">
-                              <textarea
-                                value={commentDraft}
-                                onChange={(event) => setCommentDraft(event.target.value)}
-                                rows={4}
-                                className="w-full resize-none rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white focus:border-cyan-300 focus:outline-none"
-                              />
-                              <div className="flex justify-end">
-                                <button
-                                  type="button"
-                                  onClick={() => void handleAddComment(null)}
-                                  disabled={isCommentSaving || !commentDraft.trim()}
-                                  className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  {isCommentSaving ? 'Dang gui...' : 'Gui comment'}
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="mt-4 space-y-3">
-                              {isCommentsLoading ? (
-                                <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5 text-sm text-white/55">
-                                  Dang tai comment...
-                                </div>
-                              ) : commentTree.length ? (
-                                commentTree.map((comment) => renderCommentNode(comment))
-                              ) : (
-                                <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-6 text-sm text-white/45" />
-                              )}
                             </div>
                           </div>
                         </div>
-                      </motion.div>
-                    ) : null}
-                  </AnimatePresence>
-                </TiltCard>
-              </motion.div>
-            ))}
+                      </div>
+
+                      <div className="rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-4 md:p-5">
+                        <div className="mb-4 flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] uppercase tracking-[0.26em] text-white/35">Comment</p>
+                            <h3 className="mt-2 text-xl font-semibold text-white">Trao đổi công việc</h3>
+                          </div>
+                          <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/60">
+                            {totalCommentCount}
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <textarea
+                            value={rootDraft}
+                            onChange={(event) => setCommentDrafts((current) => ({ ...current, [todo.id]: event.target.value }))}
+                            rows={4}
+                            className="w-full resize-none rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white focus:border-cyan-300 focus:outline-none"
+                          />
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => void handleAddComment(todo.id, null)}
+                              disabled={isRootSaving || !rootDraft.trim()}
+                              className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {isRootSaving ? 'Đang gửi...' : 'Gửi comment'}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 space-y-3">
+                          {isCommentsLoading ? (
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5 text-sm text-white/55">
+                              Đang tải comment...
+                            </div>
+                          ) : todoCommentTree.length ? (
+                            todoCommentTree.map((comment) => renderCommentNode(todo.id, comment))
+                          ) : (
+                            <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-6 text-sm text-white/45" />
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-start gap-3 xl:flex-col">
+                        {todo.location ? (
+                          <button
+                            type="button"
+                            onClick={() => todo.map_url && setSelectedMap(todo.map_url)}
+                            className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
+                              todo.map_url
+                                ? 'border-blue-500/20 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
+                                : 'cursor-default border-white/10 bg-white/5 text-white/50'
+                            }`}
+                          >
+                            <MapPin className="h-4 w-4" />
+                            <span className="max-w-[150px] truncate font-medium">{todo.location}</span>
+                          </button>
+                        ) : null}
+
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(todo)}
+                          className="w-full rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-sm text-blue-300 transition-colors hover:bg-blue-500/20"
+                        >
+                          Sửa
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => void toggleTodo(todo)}
+                          className="w-full rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300 transition-colors hover:bg-emerald-500/20"
+                        >
+                          {todo.done ? 'Đánh dấu chưa xong' : 'Đánh dấu đã xong'}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(todo.id)}
+                          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    </div>
+                  </TiltCard>
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
 
-          {!todos.length ? <TiltCard className="text-center text-white/60">Chua co cong viec nao.</TiltCard> : null}
+          {!todos.length ? <TiltCard className="text-center text-white/60">Chưa có công việc nào.</TiltCard> : null}
         </div>
       )}
 
@@ -1009,7 +968,7 @@ export default function Todo() {
               className="fixed bottom-0 left-0 right-0 z-[101] max-h-[90vh] overflow-y-auto rounded-t-3xl border border-white/10 bg-gray-900 p-4 shadow-2xl sm:p-6 md:left-1/2 md:top-1/2 md:w-[640px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl"
             >
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">{editingTodoId ? 'Chinh sua cong viec' : 'Them viec moi'}</h2>
+                <h2 className="text-2xl font-bold text-white">{editingTodoId ? 'Chỉnh sửa công việc' : 'Thêm việc mới'}</h2>
                 <button onClick={handleCloseForm} className="rounded-full bg-white/5 p-2 text-white/50 hover:text-white">
                   <X className="h-5 w-5" />
                 </button>
@@ -1019,7 +978,7 @@ export default function Todo() {
                 <input value={form.task} onChange={(e) => setForm((current) => ({ ...current, task: e.target.value }))} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-blue-400 focus:outline-none" />
                 <div className="grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
                   <div className="space-y-3">
-                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-white/45">Nguoi thuc hien</p>
+                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-white/45">Người thực hiện</p>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
                       {assigneeOptions.map((option) => {
                         const active = form.assignee === option.value;
@@ -1047,7 +1006,7 @@ export default function Todo() {
                   </div>
                   <div className="relative overflow-visible rounded-2xl border border-cyan-400/20 bg-[radial-gradient(circle_at_top,#164e63_0%,#0f172a_52%,#020617_100%)] p-4 text-cyan-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_20px_45px_rgba(8,145,178,0.16)]">
                     <div className="absolute inset-x-0 top-0 h-px bg-white/20" />
-                    <p className="mb-3 text-sm font-medium uppercase tracking-[0.18em] text-cyan-100/55">Thoi gian</p>
+                    <p className="mb-3 text-sm font-medium uppercase tracking-[0.18em] text-cyan-100/55">Thời gian</p>
                     <button
                       type="button"
                       onClick={() => setIsDeadlinePickerOpen((current) => !current)}
@@ -1058,7 +1017,7 @@ export default function Todo() {
                       </span>
                       <CalendarDays className="h-5 w-5 shrink-0 text-cyan-200/80" />
                     </button>
-                    <p className="mt-3 text-xs text-cyan-100/55">Co the de trong neu chua chot lich.</p>
+                    <p className="mt-3 text-xs text-cyan-100/55">Có thể để trống nếu chưa chốt lịch.</p>
 
                     <AnimatePresence>
                       {isDeadlinePickerOpen ? (
@@ -1158,7 +1117,7 @@ export default function Todo() {
 
               <div className="mt-6 flex justify-end">
                 <button onClick={() => void handleSave()} disabled={isSaving} className="rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/30 disabled:opacity-60">
-                  {isSaving ? 'Dang luu...' : editingTodoId ? 'Cap nhat cong viec' : 'Luu cong viec'}
+                  {isSaving ? 'Đang lưu...' : editingTodoId ? 'Cập nhật công việc' : 'Lưu công việc'}
                 </button>
               </div>
             </motion.div>
