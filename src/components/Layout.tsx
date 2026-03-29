@@ -9,7 +9,8 @@ import ParticlesBackground from './ParticlesBackground';
 
 const DESKTOP_BREAKPOINT = 768;
 const MOBILE_SIDEBAR_WIDTH = 280;
-const MOBILE_SIDEBAR_THRESHOLD = 140;
+const MOBILE_SIDEBAR_THRESHOLD = 120;
+const MOBILE_SWIPE_VELOCITY = 500;
 const SIDEBAR_DEFAULT_WIDTH = 256;
 const SIDEBAR_MIN_WIDTH = 72;
 const SIDEBAR_MAX_WIDTH = 320;
@@ -33,14 +34,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return Math.min(SIDEBAR_MAX_WIDTH, Math.max(0, parsedWidth));
   });
   const [isDraggingSidebar, setIsDraggingSidebar] = useState(false);
-  const [mobileSidebarOffset, setMobileSidebarOffset] = useState(-MOBILE_SIDEBAR_WIDTH);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isDraggingMobileSidebar, setIsDraggingMobileSidebar] = useState(false);
   const dragStateRef = useRef<{ startX: number; startWidth: number } | null>(null);
-  const mobileDragStateRef = useRef<{ startX: number; startOffset: number } | null>(null);
 
   const isSidebarCollapsed = sidebarWidth === 0;
   const shouldShowLabels = sidebarWidth >= SIDEBAR_LABEL_THRESHOLD;
-  const isMobileSidebarOpen = mobileSidebarOffset > -MOBILE_SIDEBAR_WIDTH + 1;
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -96,48 +95,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     };
   }, [isDraggingSidebar]);
 
-  useEffect(() => {
-    if (!isDraggingMobileSidebar) {
-      return;
-    }
-
-    const handlePointerMove = (event: PointerEvent) => {
-      const dragState = mobileDragStateRef.current;
-
-      if (!dragState) {
-        return;
-      }
-
-      const nextOffset = Math.min(
-        0,
-        Math.max(-MOBILE_SIDEBAR_WIDTH, dragState.startOffset + event.clientX - dragState.startX),
-      );
-
-      setMobileSidebarOffset(nextOffset);
-    };
-
-    const handlePointerUp = () => {
-      setIsDraggingMobileSidebar(false);
-      mobileDragStateRef.current = null;
-
-      setMobileSidebarOffset((currentOffset) => (currentOffset > -MOBILE_SIDEBAR_THRESHOLD ? 0 : -MOBILE_SIDEBAR_WIDTH));
-    };
-
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-    };
-  }, [isDraggingMobileSidebar]);
-
   const handleSidebarToggle = () => {
     setSidebarWidth((currentWidth) => (currentWidth === 0 ? SIDEBAR_DEFAULT_WIDTH : 0));
   };
 
   const handleMobileSidebarToggle = () => {
-    setMobileSidebarOffset((currentOffset) => (currentOffset === 0 ? -MOBILE_SIDEBAR_WIDTH : 0));
+    setIsMobileSidebarOpen((current) => !current);
   };
 
   const handleSidebarDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -155,19 +118,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setIsDraggingSidebar(true);
   };
 
-  const handleMobileSidebarDragStart = (event: React.PointerEvent<HTMLDivElement | HTMLButtonElement>) => {
-    if (window.innerWidth >= DESKTOP_BREAKPOINT) {
+  const handleMobileSidebarDragStart = () => {
+    setIsDraggingMobileSidebar(true);
+  };
+
+  const handleMobileSidebarDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: { offset: { x: number }; velocity: { x: number } }) => {
+    setIsDraggingMobileSidebar(false);
+
+    if (info.offset.x > MOBILE_SIDEBAR_THRESHOLD || info.velocity.x > MOBILE_SWIPE_VELOCITY) {
+      setIsMobileSidebarOpen(true);
       return;
     }
 
-    event.preventDefault();
+    if (info.offset.x < -MOBILE_SIDEBAR_THRESHOLD || info.velocity.x < -MOBILE_SWIPE_VELOCITY) {
+      setIsMobileSidebarOpen(false);
+      return;
+    }
 
-    mobileDragStateRef.current = {
-      startX: event.clientX,
-      startOffset: mobileSidebarOffset,
-    };
-
-    setIsDraggingMobileSidebar(true);
+    setIsMobileSidebarOpen((current) => current);
   };
 
   return (
@@ -188,7 +156,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={handleMobileSidebarToggle}
-            onPointerDown={handleMobileSidebarDragStart}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 backdrop-blur-xl transition hover:border-orange-400/60 hover:text-white"
             aria-label={isMobileSidebarOpen ? 'An thanh dieu huong' : 'Mo thanh dieu huong'}
           >
@@ -198,32 +165,41 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       <div className="pointer-events-none fixed inset-y-0 left-0 z-[90] flex items-center md:hidden">
-        <div
+        <button
+          type="button"
           className={cn(
             'pointer-events-auto ml-1 flex h-24 w-5 cursor-ew-resize items-center justify-center rounded-full border border-white/10 bg-[rgba(10,25,47,0.82)] text-white/50 shadow-lg shadow-black/25 backdrop-blur-xl transition',
             isMobileSidebarOpen ? 'opacity-0' : 'opacity-100',
           )}
-          onPointerDown={handleMobileSidebarDragStart}
+          onClick={() => setIsMobileSidebarOpen(true)}
           aria-hidden={isMobileSidebarOpen}
         >
           <GripVertical className="h-4 w-4" />
-        </div>
+        </button>
       </div>
 
-      {isMobileSidebarOpen ? (
+      {isMobileSidebarOpen || isDraggingMobileSidebar ? (
         <button
           type="button"
           aria-label="Dong thanh dieu huong"
           className="fixed inset-0 z-[91] bg-black/55 backdrop-blur-[2px] md:hidden"
-          onClick={() => setMobileSidebarOffset(-MOBILE_SIDEBAR_WIDTH)}
+          onClick={() => setIsMobileSidebarOpen(false)}
         />
       ) : null}
 
       <motion.aside
         initial={false}
-        animate={{ x: mobileSidebarOffset }}
-        transition={isDraggingMobileSidebar ? { duration: 0 } : { type: 'spring', stiffness: 260, damping: 30 }}
-        className="fixed inset-y-0 left-0 z-[92] flex w-[280px] flex-col border-r border-white/10 bg-[rgba(10,25,47,0.92)] px-3 py-6 shadow-2xl shadow-black/35 backdrop-blur-xl md:hidden"
+        animate={{ x: isMobileSidebarOpen ? 0 : -MOBILE_SIDEBAR_WIDTH }}
+        transition={isDraggingMobileSidebar ? { duration: 0 } : { type: 'spring', stiffness: 360, damping: 34, mass: 0.8 }}
+        drag="x"
+        dragDirectionLock
+        dragMomentum={false}
+        dragElastic={0.03}
+        dragConstraints={{ left: -MOBILE_SIDEBAR_WIDTH, right: 0 }}
+        dragListener={isMobileSidebarOpen}
+        onDragStart={handleMobileSidebarDragStart}
+        onDragEnd={handleMobileSidebarDragEnd}
+        className="fixed inset-y-0 left-0 z-[92] flex w-[280px] flex-col border-r border-white/10 bg-[rgba(10,25,47,0.92)] px-3 py-6 shadow-2xl shadow-black/35 backdrop-blur-xl [touch-action:pan-y] [will-change:transform] md:hidden"
       >
         <div className="mb-8 flex items-center gap-3 rounded-2xl px-3 py-2">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 shadow-lg shadow-orange-500/30">
@@ -242,7 +218,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <NavLink
               key={`mobile-${item.path}`}
               to={item.path}
-              onClick={() => setMobileSidebarOffset(-MOBILE_SIDEBAR_WIDTH)}
+              onClick={() => setIsMobileSidebarOpen(false)}
               className={({ isActive }) =>
                 cn(
                   'group relative flex items-center gap-4 rounded-xl px-4 py-3 transition-all duration-300',
@@ -278,7 +254,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         <div
           className="absolute right-0 top-1/2 flex h-28 w-5 -translate-y-1/2 translate-x-1/2 cursor-ew-resize items-center justify-center rounded-full border border-white/10 bg-[rgba(10,25,47,0.88)] text-white/45 shadow-lg shadow-black/25"
-          onPointerDown={handleMobileSidebarDragStart}
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize mobile navigation"
