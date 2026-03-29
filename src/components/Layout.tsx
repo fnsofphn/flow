@@ -1,12 +1,114 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { GripVertical, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { navigationItems } from '../app/routes';
 import MusicPlayer from './MusicPlayer';
 import ParticlesBackground from './ParticlesBackground';
 
+const DESKTOP_BREAKPOINT = 768;
+const SIDEBAR_DEFAULT_WIDTH = 256;
+const SIDEBAR_MIN_WIDTH = 72;
+const SIDEBAR_MAX_WIDTH = 320;
+const SIDEBAR_COLLAPSE_THRESHOLD = 116;
+const SIDEBAR_LABEL_THRESHOLD = 208;
+const SIDEBAR_STORAGE_KEY = 'flow-layout-sidebar-width';
+
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    if (typeof window === 'undefined') {
+      return SIDEBAR_DEFAULT_WIDTH;
+    }
+
+    const savedWidth = window.localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    const parsedWidth = savedWidth ? Number(savedWidth) : NaN;
+
+    if (!Number.isFinite(parsedWidth)) {
+      return window.innerWidth >= DESKTOP_BREAKPOINT ? SIDEBAR_DEFAULT_WIDTH : 0;
+    }
+
+    return Math.min(SIDEBAR_MAX_WIDTH, Math.max(0, parsedWidth));
+  });
+  const [isDraggingSidebar, setIsDraggingSidebar] = useState(false);
+  const dragStateRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  const isSidebarCollapsed = sidebarWidth === 0;
+  const shouldShowLabels = sidebarWidth >= SIDEBAR_LABEL_THRESHOLD;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(sidebarWidth));
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    if (!isDraggingSidebar) {
+      return;
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const dragState = dragStateRef.current;
+
+      if (!dragState) {
+        return;
+      }
+
+      const nextWidth = Math.min(
+        SIDEBAR_MAX_WIDTH,
+        Math.max(0, dragState.startWidth + event.clientX - dragState.startX),
+      );
+
+      setSidebarWidth(nextWidth);
+    };
+
+    const handlePointerUp = () => {
+      setIsDraggingSidebar(false);
+      dragStateRef.current = null;
+
+      setSidebarWidth((currentWidth) => {
+        if (currentWidth < SIDEBAR_COLLAPSE_THRESHOLD) {
+          return 0;
+        }
+
+        if (currentWidth < SIDEBAR_MIN_WIDTH) {
+          return SIDEBAR_MIN_WIDTH;
+        }
+
+        return currentWidth;
+      });
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [isDraggingSidebar]);
+
+  const handleSidebarToggle = () => {
+    setSidebarWidth((currentWidth) => (currentWidth === 0 ? SIDEBAR_DEFAULT_WIDTH : 0));
+  };
+
+  const handleSidebarDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (window.innerWidth < DESKTOP_BREAKPOINT) {
+      return;
+    }
+
+    event.preventDefault();
+
+    dragStateRef.current = {
+      startX: event.clientX,
+      startWidth: sidebarWidth,
+    };
+
+    setIsDraggingSidebar(true);
+  };
+
   return (
     <div className="relative min-h-screen bg-transparent md:flex md:h-screen md:overflow-hidden">
       <ParticlesBackground />
@@ -23,55 +125,107 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      <motion.aside 
+      <motion.aside
         initial={{ x: -100, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        className="hidden h-full w-20 flex-col items-center border-r border-white/10 py-8 px-4 z-50 rounded-none glass-card md:flex md:w-64 md:items-start"
+        animate={{ x: 0, opacity: 1, width: sidebarWidth }}
+        transition={{
+          x: { duration: 0.35 },
+          opacity: { duration: 0.35 },
+          width: isDraggingSidebar ? { duration: 0 } : { type: 'spring', stiffness: 220, damping: 28 },
+        }}
+        className="relative z-40 hidden h-full shrink-0 overflow-hidden md:block"
       >
-        <div className="flex items-center gap-3 mb-12 md:px-4">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-            <span className="font-bold text-xl">NC</span>
-          </div>
-          <span className="hidden md:block font-bold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-            NamCy
-          </span>
-        </div>
-
-        <nav className="flex-1 w-full space-y-2 overflow-y-auto no-scrollbar">
-          {navigationItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => cn(
-                "flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group relative",
-                isActive ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+        {!isSidebarCollapsed ? (
+          <div className="flex h-full flex-col border-r border-white/10 bg-[rgba(10,25,47,0.5)] px-3 py-6 backdrop-blur-xl">
+            <div
+              className={cn(
+                'mb-8 flex items-center gap-3 rounded-2xl px-3 py-2',
+                shouldShowLabels ? 'justify-start' : 'justify-center',
               )}
             >
-              {({ isActive }) => (
-                <>
-                  {item.icon ? (
-                    <item.icon
-                      className={cn("w-5 h-5 transition-transform duration-300", isActive ? "scale-110" : "group-hover:scale-110")}
-                    />
-                  ) : null}
-                  <span className="hidden md:block font-medium">{item.label}</span>
-                  {isActive && (
-                    <motion.div 
-                      layoutId="activeNav"
-                      className="absolute left-0 w-1 h-8 bg-orange-500 rounded-r-full"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
-                    />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 shadow-lg shadow-orange-500/30">
+                <span className="text-xl font-bold">NC</span>
+              </div>
+              {shouldShowLabels ? (
+                <div className="min-w-0">
+                  <p className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-xl font-bold tracking-tight text-transparent">
+                    NamCy
+                  </p>
+                  <p className="text-xs text-white/55">Thanh điều hướng module</p>
+                </div>
+              ) : null}
+            </div>
+
+            <nav className="no-scrollbar flex-1 space-y-2 overflow-y-auto">
+              {navigationItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    cn(
+                      'group relative flex items-center rounded-xl py-3 transition-all duration-300',
+                      shouldShowLabels ? 'gap-4 px-4' : 'justify-center px-2',
+                      isActive ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white',
+                    )
+                  }
+                  title={item.label}
+                >
+                  {({ isActive }) => (
+                    <>
+                      {item.icon ? (
+                        <item.icon
+                          className={cn(
+                            'h-5 w-5 shrink-0 transition-transform duration-300',
+                            isActive ? 'scale-110' : 'group-hover:scale-110',
+                          )}
+                        />
+                      ) : null}
+                      {shouldShowLabels ? <span className="truncate font-medium">{item.label}</span> : null}
+                      {isActive ? (
+                        <motion.div
+                          layoutId="activeNav"
+                          className="absolute left-0 h-8 w-1 rounded-r-full bg-orange-500"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      ) : null}
+                    </>
                   )}
-                </>
-              )}
-            </NavLink>
-          ))}
-        </nav>
+                </NavLink>
+              ))}
+            </nav>
+          </div>
+        ) : null}
       </motion.aside>
 
-      <main className="relative z-10 flex-1 px-4 pb-40 pt-4 md:h-full md:overflow-y-auto md:p-8">
+      <div
+        className={cn(
+          'group relative z-40 hidden h-full w-5 shrink-0 cursor-col-resize items-center justify-center md:flex',
+          isDraggingSidebar ? 'select-none' : '',
+        )}
+        onPointerDown={handleSidebarDragStart}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize navigation"
+      >
+        <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-white/10 transition-colors group-hover:bg-orange-400/70" />
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            handleSidebarToggle();
+          }}
+          className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-[rgba(10,25,47,0.78)] text-white/70 shadow-lg shadow-black/20 backdrop-blur-xl transition hover:border-orange-400/60 hover:text-white"
+          aria-label={isSidebarCollapsed ? 'Mở thanh điều hướng' : 'Ẩn thanh điều hướng'}
+          title={isSidebarCollapsed ? 'Mở thanh điều hướng' : 'Ẩn thanh điều hướng'}
+        >
+          {isSidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+        </button>
+        <GripVertical className="pointer-events-none absolute bottom-6 h-4 w-4 text-white/30 transition group-hover:text-orange-200/80" />
+      </div>
+
+      <main className="relative z-10 min-w-0 flex-1 px-4 pb-40 pt-4 md:h-full md:overflow-y-auto md:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
