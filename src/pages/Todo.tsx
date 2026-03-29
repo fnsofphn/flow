@@ -15,6 +15,13 @@ type Todo = {
   done: boolean;
 };
 
+type TodoComment = {
+  id: string;
+  todo_id: string;
+  content: string;
+  created_at: string;
+};
+
 const emptyForm = {
   task: '',
   assignee: 'Nam',
@@ -104,6 +111,7 @@ const renderAssigneeBadges = (assignee: string) => {
 
 export default function Todo() {
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [todoComments, setTodoComments] = useState<TodoComment[]>([]);
   const [selectedMap, setSelectedMap] = useState<string | null>(null);
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -111,7 +119,10 @@ export default function Todo() {
   const [isDeadlinePickerOpen, setIsDeadlinePickerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCommentsLoading, setIsCommentsLoading] = useState(false);
+  const [isCommentSaving, setIsCommentSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [commentDraft, setCommentDraft] = useState('');
   const [form, setForm] = useState(emptyForm);
 
   const summary = useMemo(() => {
@@ -142,6 +153,35 @@ export default function Todo() {
   useEffect(() => {
     void loadTodos();
   }, []);
+
+  useEffect(() => {
+    const loadComments = async () => {
+      if (!selectedTodo) {
+        setTodoComments([]);
+        setCommentDraft('');
+        return;
+      }
+
+      setIsCommentsLoading(true);
+
+      const { data, error: commentsError } = await supabase
+        .from('todo_comments')
+        .select('id, todo_id, content, created_at')
+        .eq('todo_id', selectedTodo.id)
+        .order('created_at', { ascending: false });
+
+      if (commentsError) {
+        setError(commentsError.message);
+        setTodoComments([]);
+      } else {
+        setTodoComments((data as TodoComment[]) ?? []);
+      }
+
+      setIsCommentsLoading(false);
+    };
+
+    void loadComments();
+  }, [selectedTodo]);
 
   const toggleTodo = async (todo: Todo) => {
     const nextDone = !todo.done;
@@ -249,6 +289,39 @@ export default function Todo() {
     setEditingTodoId(null);
     setIsDeadlinePickerOpen(false);
     setForm(emptyForm);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedTodo(null);
+    setTodoComments([]);
+    setCommentDraft('');
+  };
+
+  const handleAddComment = async () => {
+    if (!selectedTodo || !commentDraft.trim()) {
+      return;
+    }
+
+    setIsCommentSaving(true);
+    setError(null);
+
+    const { data, error: insertError } = await supabase
+      .from('todo_comments')
+      .insert({
+        todo_id: selectedTodo.id,
+        content: commentDraft.trim(),
+      })
+      .select('id, todo_id, content, created_at')
+      .single();
+
+    if (insertError) {
+      setError(insertError.message);
+    } else if (data) {
+      setTodoComments((current) => [data as TodoComment, ...current]);
+      setCommentDraft('');
+    }
+
+    setIsCommentSaving(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -379,10 +452,9 @@ export default function Todo() {
                             ) : null}
                           </div>
 
-                          <div className="mt-5 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-sm text-white/38">Chạm để xem chi tiết công việc</p>
+                          <div className="mt-5 flex justify-end">
                             <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-sm font-medium text-white/70 transition-colors group-hover:border-cyan-300/30 group-hover:text-cyan-100">
-                              Xem chi tiết
+                              Chi tiết
                             </span>
                           </div>
                         </div>
@@ -449,7 +521,7 @@ export default function Todo() {
               </div>
 
               <div className="space-y-4">
-                <input value={form.task} onChange={(e) => setForm((current) => ({ ...current, task: e.target.value }))} placeholder="Tên công việc" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-blue-400 focus:outline-none" />
+                <input value={form.task} onChange={(e) => setForm((current) => ({ ...current, task: e.target.value }))} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-blue-400 focus:outline-none" />
                 <div className="grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
                   <div className="space-y-3">
                     <p className="text-sm font-medium uppercase tracking-[0.18em] text-white/45">Người thực hiện</p>
@@ -577,17 +649,16 @@ export default function Todo() {
                         type="number"
                         value={form.cost}
                         onChange={(e) => setForm((current) => ({ ...current, cost: e.target.value }))}
-                        placeholder="0"
-                        className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 pr-16 text-white placeholder:text-white/25 focus:border-amber-300 focus:outline-none"
+                        className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 pr-16 text-white focus:border-amber-300 focus:outline-none"
                       />
                       <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold uppercase tracking-[0.16em] text-amber-100/65">
                         VNĐ
                       </span>
                     </div>
                   </div>
-                  <input value={form.location} onChange={(e) => setForm((current) => ({ ...current, location: e.target.value }))} placeholder="Địa điểm hoặc ghi chú vị trí" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-blue-400 focus:outline-none" />
+                  <input value={form.location} onChange={(e) => setForm((current) => ({ ...current, location: e.target.value }))} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-blue-400 focus:outline-none" />
                 </div>
-                <input value={form.mapUrl} onChange={(e) => setForm((current) => ({ ...current, mapUrl: e.target.value }))} placeholder="Liên kết Google Maps (không bắt buộc)" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-blue-400 focus:outline-none" />
+                <input value={form.mapUrl} onChange={(e) => setForm((current) => ({ ...current, mapUrl: e.target.value }))} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-blue-400 focus:outline-none" />
               </div>
 
               <div className="mt-6 flex justify-end">
@@ -608,84 +679,138 @@ export default function Todo() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-[110] bg-black/75 backdrop-blur-sm"
-              onClick={() => setSelectedTodo(null)}
+              onClick={handleCloseDetails}
             />
             <motion.div
               initial={{ opacity: 0, y: 24, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 18, scale: 0.98 }}
-              className="fixed inset-x-3 top-1/2 z-[111] mx-auto w-auto max-w-2xl -translate-y-1/2 overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,#1e293b_0%,#0f172a_44%,#020617_100%)] shadow-[0_30px_100px_rgba(0,0,0,0.5)] sm:inset-x-4 sm:rounded-[32px]"
+              className="fixed inset-x-3 top-1/2 z-[111] mx-auto w-auto max-w-6xl -translate-y-1/2 overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,#1e293b_0%,#0f172a_44%,#020617_100%)] shadow-[0_30px_100px_rgba(0,0,0,0.5)] sm:inset-x-4 sm:rounded-[32px]"
             >
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.16),transparent_26%),radial-gradient(circle_at_bottom_left,rgba(251,191,36,0.14),transparent_22%)]" />
-              <div className="relative p-6 md:p-7">
+              <div className="relative max-h-[90vh] overflow-y-auto p-5 md:p-7">
                 <div className="mb-5 flex items-start justify-between gap-4">
-                  <div>
+                  <div className="min-w-0">
                     <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.28em] text-white/35">
                       {selectedTodo.done ? 'Đã hoàn thành' : 'Chi tiết công việc'}
                     </p>
-                    <h2 className="text-2xl font-bold text-white">{selectedTodo.task}</h2>
+                    <h2 className="text-2xl font-bold text-white md:text-3xl">{selectedTodo.task}</h2>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setSelectedTodo(null)}
+                    onClick={handleCloseDetails}
                     className="rounded-full bg-white/5 p-2 text-white/50 transition-colors hover:text-white"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/40">Người thực hiện</p>
-                    <div className="mt-3 flex flex-wrap gap-2">{renderAssigneeBadges(selectedTodo.assignee)}</div>
-                  </div>
-                  <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.06] p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-100/45">Thời gian</p>
-                    <p className="mt-3 text-base font-semibold text-cyan-50">
-                      {selectedTodo.deadline
-                        ? new Date(selectedTodo.deadline).toLocaleString('vi-VN', { dateStyle: 'full', timeStyle: 'short' })
-                        : 'Chưa chốt ngày giờ'}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-amber-300/15 bg-amber-400/[0.06] p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-amber-100/45">Ngân sách dự kiến</p>
-                    <p className="mt-3 text-base font-semibold text-amber-50">{formatCurrency(Number(selectedTodo.cost || 0))}</p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-white/40">Địa điểm</p>
-                    <p className="mt-3 text-base font-semibold text-white/85">{selectedTodo.location || 'Chưa thêm địa điểm'}</p>
-                  </div>
-                </div>
+                <div className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
+                  <div className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-white/40">Người thực hiện</p>
+                        <div className="mt-3 flex flex-wrap gap-2">{renderAssigneeBadges(selectedTodo.assignee)}</div>
+                      </div>
+                      <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.06] p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-cyan-100/45">Thời gian</p>
+                        <p className="mt-3 text-base font-semibold text-cyan-50">
+                          {selectedTodo.deadline
+                            ? new Date(selectedTodo.deadline).toLocaleString('vi-VN', { dateStyle: 'full', timeStyle: 'short' })
+                            : 'Chưa chốt ngày giờ'}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-amber-300/15 bg-amber-400/[0.06] p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-amber-100/45">Ngân sách</p>
+                        <p className="mt-3 text-base font-semibold text-amber-50">{formatCurrency(Number(selectedTodo.cost || 0))}</p>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                        <p className="text-xs uppercase tracking-[0.2em] text-white/40">Địa điểm</p>
+                        <p className="mt-3 text-base font-semibold text-white/85">{selectedTodo.location || 'Chưa thêm địa điểm'}</p>
+                      </div>
+                    </div>
 
-                {selectedTodo.map_url ? (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedMap(selectedTodo.map_url)}
-                    className="mt-4 flex items-center gap-2 rounded-2xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/20"
-                  >
-                    <MapPin className="h-4 w-4" />
-                    Mở bản đồ
-                  </button>
-                ) : null}
+                    {selectedTodo.map_url ? (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMap(selectedTodo.map_url)}
+                        className="flex items-center gap-2 rounded-2xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/20"
+                      >
+                        <MapPin className="h-4 w-4" />
+                        Mở bản đồ
+                      </button>
+                    ) : null}
 
-                <div className="mt-6 flex flex-wrap justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedTodo(null);
-                      handleEdit(selectedTodo);
-                    }}
-                    className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/20"
-                  >
-                    Chỉnh sửa
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void toggleTodo(selectedTodo)}
-                    className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20"
-                  >
-                    {selectedTodo.done ? 'Đánh dấu chưa xong' : 'Đánh dấu đã xong'}
-                  </button>
+                    <div className="flex flex-wrap gap-3 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCloseDetails();
+                          handleEdit(selectedTodo);
+                        }}
+                        className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-sm font-medium text-blue-300 transition-colors hover:bg-blue-500/20"
+                      >
+                        Chỉnh sửa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void toggleTodo(selectedTodo)}
+                        className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20"
+                      >
+                        {selectedTodo.done ? 'Đánh dấu chưa xong' : 'Đánh dấu đã xong'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-4 md:p-5">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.26em] text-white/35">Comment</p>
+                        <h3 className="mt-2 text-xl font-semibold text-white">Trao đổi công việc</h3>
+                      </div>
+                      <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm text-white/60">
+                        {todoComments.length}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <textarea
+                        value={commentDraft}
+                        onChange={(event) => setCommentDraft(event.target.value)}
+                        rows={4}
+                        className="w-full resize-none rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white focus:border-cyan-300 focus:outline-none"
+                      />
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => void handleAddComment()}
+                          disabled={isCommentSaving || !commentDraft.trim()}
+                          className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isCommentSaving ? 'Đang gửi...' : 'Gửi comment'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 space-y-3">
+                      {isCommentsLoading ? (
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-5 text-sm text-white/55">
+                          Đang tải comment...
+                        </div>
+                      ) : todoComments.length ? (
+                        todoComments.map((comment) => (
+                          <div key={comment.id} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                            <div className="mb-2 text-[11px] uppercase tracking-[0.22em] text-white/35">
+                              {new Date(comment.created_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}
+                            </div>
+                            <p className="whitespace-pre-wrap text-sm leading-6 text-white/82">{comment.content}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-6 text-sm text-white/45" />
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
