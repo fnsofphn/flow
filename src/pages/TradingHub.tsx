@@ -46,6 +46,7 @@ type MarketAsset = {
 type MarketOverviewResponse = {
   updatedAt: string;
   usdToVnd: number;
+  warnings?: string[];
   topOiMarketCapCoins?: Array<{
     symbol: string;
     price: number;
@@ -162,6 +163,10 @@ export default function TradingHub() {
     ? new Date(overview.updatedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     : '--:--:--';
   const topOiMarketCapCoins = overview?.topOiMarketCapCoins ?? [];
+  const hasBinanceRatios = Boolean(
+    btc?.metrics?.globalLongShortAccountRatio || btc?.metrics?.topLongShortAccountRatio || btc?.metrics?.takerBuySellRatio4h,
+  );
+  const hasOiRanking = topOiMarketCapCoins.length > 0;
 
   return (
     <div className="space-y-8 pb-24">
@@ -219,17 +224,19 @@ export default function TradingHub() {
           <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/60">Nguồn dữ liệu</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <span className={badgeClass}>Coinbase</span>
-            <span className={badgeClass}>Binance Futures</span>
             <span className={badgeClass}>Yahoo Finance</span>
-            <span className={badgeClass}>CoinGecko</span>
+            {hasBinanceRatios || hasOiRanking ? <span className={badgeClass}>Binance Futures</span> : null}
+            {hasOiRanking ? <span className={badgeClass}>CoinGecko</span> : null}
           </div>
-          <div className="mt-6 rounded-2xl border border-white/10 bg-black/15 p-4">
-            <p className="text-sm text-white/55">OI / Market Cap không cần API key</p>
-            <p className="mt-2 text-lg font-semibold text-white">Binance open interest + CoinGecko market cap</p>
-            <p className="mt-2 text-sm text-white/45">
-              Bảng top 5 bên dưới được tự tính từ open interest công khai trên Binance Futures và vốn hóa công khai từ CoinGecko.
-            </p>
-          </div>
+          {hasOiRanking ? (
+            <div className="mt-6 rounded-2xl border border-white/10 bg-black/15 p-4">
+              <p className="text-sm text-white/55">OI / Market Cap không cần API key</p>
+              <p className="mt-2 text-lg font-semibold text-white">Binance open interest + CoinGecko market cap</p>
+              <p className="mt-2 text-sm text-white/45">
+                Bảng top 5 bên dưới được tự tính từ open interest công khai trên Binance Futures và vốn hóa công khai từ CoinGecko.
+              </p>
+            </div>
+          ) : null}
         </TiltCard>
       </div>
 
@@ -324,8 +331,8 @@ export default function TradingHub() {
         </TiltCard>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <TiltCard className="xl:col-span-2">
+      <div className={`grid grid-cols-1 gap-6 ${hasBinanceRatios ? 'xl:grid-cols-3' : ''}`}>
+        <TiltCard className={hasBinanceRatios ? 'xl:col-span-2' : ''}>
           <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
             <BarChart2 className="h-5 w-5 text-orange-400" />
             Biểu đồ BTC/USD 24h
@@ -373,49 +380,47 @@ export default function TradingHub() {
           </div>
         </TiltCard>
 
-        <TiltCard>
-          <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
-            <Activity className="h-5 w-5 text-blue-400" />
-            Chỉ số BTC 4h
-          </h2>
-          <div className="space-y-3">
-            <MetricPill
-              label="% Giá thay đổi 4h"
-              value={btc ? formatPercent(btc.metrics?.priceChange4h ?? 0) : '--'}
-              positive={(btc?.metrics?.priceChange4h ?? 0) >= 0}
-            />
-            <MetricPill
-              label="% Khối lượng 4h"
-              value={btc ? formatPercent(btc.metrics?.volumeChange4h ?? 0) : '--'}
-              positive={(btc?.metrics?.volumeChange4h ?? 0) >= 0}
-            />
-            <MetricPill
-              label="Long/Short tài khoản"
-              value={btc?.metrics?.globalLongShortAccountRatio ? formatRatio(btc.metrics.globalLongShortAccountRatio.ratio) : '--'}
-            />
-            <MetricPill
-              label="Long/Short hàng đầu"
-              value={btc?.metrics?.topLongShortAccountRatio ? formatRatio(btc.metrics.topLongShortAccountRatio.ratio) : '--'}
-            />
-            <MetricPill
-              label="Taker Buy/Sell 4h"
-              value={btc?.metrics?.takerBuySellRatio4h ? formatRatio(btc.metrics.takerBuySellRatio4h.ratio) : '--'}
-            />
-          </div>
-        </TiltCard>
+        {hasBinanceRatios ? (
+          <TiltCard>
+            <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
+              <Activity className="h-5 w-5 text-blue-400" />
+              Chỉ số BTC 4h
+            </h2>
+            <div className="space-y-3">
+              <MetricPill
+                label="% Giá thay đổi 4h"
+                value={btc ? formatPercent(btc.metrics?.priceChange4h ?? 0) : '--'}
+                positive={(btc?.metrics?.priceChange4h ?? 0) >= 0}
+              />
+              <MetricPill
+                label="% Khối lượng 4h"
+                value={btc ? formatPercent(btc.metrics?.volumeChange4h ?? 0) : '--'}
+                positive={(btc?.metrics?.volumeChange4h ?? 0) >= 0}
+              />
+              {btc?.metrics?.globalLongShortAccountRatio ? (
+                <MetricPill label="Long/Short tài khoản" value={formatRatio(btc.metrics.globalLongShortAccountRatio.ratio)} />
+              ) : null}
+              {btc?.metrics?.topLongShortAccountRatio ? (
+                <MetricPill label="Long/Short hàng đầu" value={formatRatio(btc.metrics.topLongShortAccountRatio.ratio)} />
+              ) : null}
+              {btc?.metrics?.takerBuySellRatio4h ? (
+                <MetricPill label="Taker Buy/Sell 4h" value={formatRatio(btc.metrics.takerBuySellRatio4h.ratio)} />
+              ) : null}
+            </div>
+          </TiltCard>
+        ) : null}
       </div>
 
-      <TiltCard className="border-fuchsia-400/15 bg-[radial-gradient(circle_at_top_right,rgba(217,70,239,0.12),transparent_28%),rgba(255,255,255,0.03)]">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-fuchsia-200/55">OI / Market Cap Ranking</p>
-            <h2 className="mt-2 text-2xl font-bold text-white">Top 5 coin có OI / vốn hóa thị trường cao nhất</h2>
-            <p className="mt-2 text-sm text-white/50">Ưu tiên các coin đang bị đòn bẩy hóa mạnh so với quy mô vốn hóa hiện tại.</p>
+      {hasOiRanking ? (
+        <TiltCard className="border-fuchsia-400/15 bg-[radial-gradient(circle_at_top_right,rgba(217,70,239,0.12),transparent_28%),rgba(255,255,255,0.03)]">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.24em] text-fuchsia-200/55">OI / Market Cap Ranking</p>
+              <h2 className="mt-2 text-2xl font-bold text-white">Top 5 coin có OI / vốn hóa thị trường cao nhất</h2>
+              <p className="mt-2 text-sm text-white/50">Ưu tiên các coin đang bị đòn bẩy hóa mạnh so với quy mô vốn hóa hiện tại.</p>
+            </div>
+            <div className="text-sm text-white/45">Tính từ Binance Futures + CoinGecko</div>
           </div>
-          <div className="text-sm text-white/45">Tính từ Binance Futures + CoinGecko</div>
-        </div>
-
-        {topOiMarketCapCoins.length ? (
           <div className="mt-6 grid gap-4 lg:grid-cols-5">
             {topOiMarketCapCoins.map((coin, index) => (
               <div
@@ -465,38 +470,38 @@ export default function TradingHub() {
               </div>
             ))}
           </div>
-        ) : (
-          <div className="mt-6 rounded-[28px] border border-dashed border-white/14 bg-black/15 px-6 py-8 text-center text-sm text-white/55">
-            Chưa lấy được dữ liệu xếp hạng OI / vốn hóa từ Binance Futures và CoinGecko ở lần tải này.
-          </div>
-        )}
-      </TiltCard>
+        </TiltCard>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <TiltCard>
-          <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
-            <Activity className="h-5 w-5 text-amber-400" />
-            Cấu trúc Long / Short Binance
-          </h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-sm font-semibold text-white/80">Tài khoản toàn thị trường</p>
-              <p className="mt-3 text-2xl font-bold text-white">{btc?.metrics?.globalLongShortAccountRatio ? formatRatio(btc.metrics.globalLongShortAccountRatio.ratio) : '--'}</p>
-              <p className="mt-2 text-sm text-white/55">
-                Long {((btc?.metrics?.globalLongShortAccountRatio?.longAccount ?? 0) * 100).toFixed(0)}% • Short{' '}
-                {((btc?.metrics?.globalLongShortAccountRatio?.shortAccount ?? 0) * 100).toFixed(0)}%
-              </p>
+        {hasBinanceRatios ? (
+          <TiltCard>
+            <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">
+              <Activity className="h-5 w-5 text-amber-400" />
+              Cấu trúc Long / Short Binance
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              {btc?.metrics?.globalLongShortAccountRatio ? (
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-sm font-semibold text-white/80">Tài khoản toàn thị trường</p>
+                  <p className="mt-3 text-2xl font-bold text-white">{formatRatio(btc.metrics.globalLongShortAccountRatio.ratio)}</p>
+                  <p className="mt-2 text-sm text-white/55">
+                    Long {((btc.metrics.globalLongShortAccountRatio.longAccount ?? 0) * 100).toFixed(0)}% • Short {((btc.metrics.globalLongShortAccountRatio.shortAccount ?? 0) * 100).toFixed(0)}%
+                  </p>
+                </div>
+              ) : null}
+              {btc?.metrics?.topLongShortAccountRatio ? (
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-sm font-semibold text-white/80">Nhóm tài khoản hàng đầu</p>
+                  <p className="mt-3 text-2xl font-bold text-white">{formatRatio(btc.metrics.topLongShortAccountRatio.ratio)}</p>
+                  <p className="mt-2 text-sm text-white/55">
+                    Long {((btc.metrics.topLongShortAccountRatio.longAccount ?? 0) * 100).toFixed(0)}% • Short {((btc.metrics.topLongShortAccountRatio.shortAccount ?? 0) * 100).toFixed(0)}%
+                  </p>
+                </div>
+              ) : null}
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-sm font-semibold text-white/80">Nhóm tài khoản hàng đầu</p>
-              <p className="mt-3 text-2xl font-bold text-white">{btc?.metrics?.topLongShortAccountRatio ? formatRatio(btc.metrics.topLongShortAccountRatio.ratio) : '--'}</p>
-              <p className="mt-2 text-sm text-white/55">
-                Long {((btc?.metrics?.topLongShortAccountRatio?.longAccount ?? 0) * 100).toFixed(0)}% • Short{' '}
-                {((btc?.metrics?.topLongShortAccountRatio?.shortAccount ?? 0) * 100).toFixed(0)}%
-              </p>
-            </div>
-          </div>
-        </TiltCard>
+          </TiltCard>
+        ) : null}
 
         <TiltCard>
           <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold">

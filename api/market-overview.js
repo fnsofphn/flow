@@ -192,9 +192,22 @@ function latestMetricPoint(series) {
   return item ?? null;
 }
 
+function getSettledValue(result, fallback) {
+  return result.status === 'fulfilled' ? result.value : fallback;
+}
+
+function getSettledReason(result, label) {
+  if (result.status === 'fulfilled') {
+    return null;
+  }
+
+  const message = result.reason instanceof Error ? result.reason.message : String(result.reason ?? label);
+  return `${label}: ${message}`;
+}
+
 export default async function handler(_req, res) {
   try {
-    const [btcTicker, btcCandles, gold, silver, usdVnd, globalLongShort, topAccountLongShort, takerVolume, topOiMarketCapCoins] = await Promise.all([
+    const results = await Promise.allSettled([
       fetchCoinbaseTicker('BTC-USD'),
       fetchCoinbaseCandles('BTC-USD', 3600),
       fetchYahooChart('GC=F'),
@@ -206,6 +219,32 @@ export default async function handler(_req, res) {
       buildTopOiMarketCapCoins(),
     ]);
 
+    const [
+      btcTickerResult,
+      btcCandlesResult,
+      goldResult,
+      silverResult,
+      usdVndResult,
+      globalLongShortResult,
+      topAccountLongShortResult,
+      takerVolumeResult,
+      topOiMarketCapCoinsResult,
+    ] = results;
+
+    const btcTicker = getSettledValue(btcTickerResult, null);
+    const btcCandles = getSettledValue(btcCandlesResult, []);
+    const gold = getSettledValue(goldResult, null);
+    const silver = getSettledValue(silverResult, null);
+    const usdVnd = getSettledValue(usdVndResult, null);
+    const globalLongShort = getSettledValue(globalLongShortResult, []);
+    const topAccountLongShort = getSettledValue(topAccountLongShortResult, []);
+    const takerVolume = getSettledValue(takerVolumeResult, []);
+    const topOiMarketCapCoins = getSettledValue(topOiMarketCapCoinsResult, []);
+
+    if (!btcTicker || !btcCandles.length || !gold || !silver || !usdVnd) {
+      throw new Error('Không thể tải đủ dữ liệu nền từ Coinbase, Yahoo hoặc tỷ giá USD/VND.');
+    }
+
     const usdToVnd = usdVnd.price || 0;
     const btcMetrics = summarizeBtcMetrics(btcTicker, btcCandles);
     const goldUnits = buildMetalUnits(gold.price, usdToVnd);
@@ -213,10 +252,17 @@ export default async function handler(_req, res) {
     const globalPoint = latestMetricPoint(globalLongShort);
     const topAccountPoint = latestMetricPoint(topAccountLongShort);
     const takerPoint = latestMetricPoint(takerVolume);
+    const warnings = [
+      getSettledReason(globalLongShortResult, 'Binance global long/short'),
+      getSettledReason(topAccountLongShortResult, 'Binance top-account long/short'),
+      getSettledReason(takerVolumeResult, 'Binance taker buy/sell'),
+      getSettledReason(topOiMarketCapCoinsResult, 'OI / Market Cap ranking'),
+    ].filter(Boolean);
 
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
     res.status(200).json({
       updatedAt: new Date().toISOString(),
+      warnings,
       sources: {
         btc: 'coinbase-exchange',
         metals: 'yahoo-finance',
