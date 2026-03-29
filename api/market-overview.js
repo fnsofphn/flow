@@ -1,6 +1,7 @@
 const YAHOO_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart';
 const COINBASE_EXCHANGE_BASE = 'https://api.exchange.coinbase.com';
 const BINANCE_FUTURES_BASE = 'https://fapi.binance.com';
+const COINGECKO_BASE = 'https://api.coingecko.com/api/v3';
 const TROY_OUNCE_IN_GRAMS = 31.1034768;
 const LUONG_IN_GRAMS = 37.5;
 const CHI_IN_GRAMS = 3.75;
@@ -88,6 +89,71 @@ async function fetchBinanceMetric(path, params) {
   });
 }
 
+async function fetchCoinGeckoMarkets() {
+  return fetchJson(
+    `${COINGECKO_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=80&page=1&sparkline=false&price_change_percentage=24h`,
+    {
+      headers: {
+      'User-Agent': 'flow-vercel-market-fetcher',
+      },
+    },
+  );
+}
+
+async function fetchBinanceOpenInterest(symbol) {
+  const payload = await fetchJson(`${BINANCE_FUTURES_BASE}/fapi/v1/openInterest?symbol=${encodeURIComponent(symbol)}`, {
+    headers: {
+      'User-Agent': 'flow-vercel-market-fetcher',
+    },
+  });
+
+  return {
+    symbol,
+    openInterest: Number(payload?.openInterest ?? 0),
+  };
+}
+
+async function buildTopOiMarketCapCoins() {
+  const marketRows = await fetchCoinGeckoMarkets();
+  const supportedCoins = Array.isArray(marketRows)
+    ? marketRows.filter((coin) => {
+        const symbol = String(coin?.symbol ?? '').toUpperCase();
+        return symbol && !['USDT', 'USDC', 'BUSD', 'DAI', 'FDUSD', 'WBTC', 'WETH', 'STETH'].includes(symbol);
+      })
+    : [];
+
+  const candidates = supportedCoins.slice(0, 30);
+  const oiRows = await Promise.all(
+    candidates.map(async (coin) => {
+      const symbol = `${String(coin.symbol).toUpperCase()}USDT`;
+
+      try {
+        const oi = await fetchBinanceOpenInterest(symbol);
+        const price = Number(coin.current_price ?? 0);
+        const openInterestUsd = oi.openInterest * price;
+
+        return {
+          symbol: String(coin.symbol).toUpperCase(),
+          price,
+          marketCapUsd: Number(coin.market_cap ?? 0),
+          openInterestUsd,
+          oiMarketCapRatio: coin.market_cap ? openInterestUsd / Number(coin.market_cap) : 0,
+          priceChangePercent4h: 0,
+          oiChangePercent4h: 0,
+          volumeChangePercent4h: 0,
+        };
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  return oiRows
+    .filter((item) => item && Number.isFinite(item.oiMarketCapRatio) && item.marketCapUsd > 0 && item.openInterestUsd > 0)
+    .sort((left, right) => right.oiMarketCapRatio - left.oiMarketCapRatio)
+    .slice(0, 5);
+}
+
 function percent(current, previous) {
   return previous ? ((current - previous) / previous) * 100 : 0;
 }
@@ -128,7 +194,7 @@ function latestMetricPoint(series) {
 
 export default async function handler(_req, res) {
   try {
-    const [btcTicker, btcCandles, gold, silver, usdVnd, globalLongShort, topAccountLongShort, takerVolume] = await Promise.all([
+    const [btcTicker, btcCandles, gold, silver, usdVnd, globalLongShort, topAccountLongShort, takerVolume, topOiMarketCapCoins] = await Promise.all([
       fetchCoinbaseTicker('BTC-USD'),
       fetchCoinbaseCandles('BTC-USD', 3600),
       fetchYahooChart('GC=F'),
@@ -137,6 +203,7 @@ export default async function handler(_req, res) {
       fetchBinanceMetric('/futures/data/globalLongShortAccountRatio', { symbol: 'BTCUSDT', period: '4h', limit: '2' }),
       fetchBinanceMetric('/futures/data/topLongShortAccountRatio', { symbol: 'BTCUSDT', period: '4h', limit: '2' }),
       fetchBinanceMetric('/futures/data/takerlongshortRatio', { symbol: 'BTCUSDT', period: '4h', limit: '2' }),
+      buildTopOiMarketCapCoins(),
     ]);
 
     const usdToVnd = usdVnd.price || 0;
@@ -154,8 +221,10 @@ export default async function handler(_req, res) {
         btc: 'coinbase-exchange',
         metals: 'yahoo-finance',
         derivatives: 'binance-futures',
+        oiRanking: 'binance-futures-and-coingecko',
       },
       usdToVnd,
+      topOiMarketCapCoins,
       assets: [
         {
           key: 'btc',

@@ -46,6 +46,16 @@ type MarketAsset = {
 type MarketOverviewResponse = {
   updatedAt: string;
   usdToVnd: number;
+  topOiMarketCapCoins?: Array<{
+    symbol: string;
+    price: number;
+    marketCapUsd: number;
+    openInterestUsd: number;
+    oiMarketCapRatio: number;
+    priceChangePercent4h: number;
+    oiChangePercent4h: number;
+    volumeChangePercent4h: number;
+  }>;
   assets: MarketAsset[];
 };
 
@@ -82,6 +92,8 @@ const formatChartTime = (timestamp: number) =>
     hour: '2-digit',
     minute: '2-digit',
   });
+
+const badgeClass = 'rounded-full border border-white/10 bg-white/6 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-white/55';
 
 function MetricPill({
   label,
@@ -149,6 +161,7 @@ export default function TradingHub() {
   const updatedLabel = overview?.updatedAt
     ? new Date(overview.updatedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     : '--:--:--';
+  const topOiMarketCapCoins = overview?.topOiMarketCapCoins ?? [];
 
   return (
     <div className="space-y-8 pb-24">
@@ -182,6 +195,43 @@ export default function TradingHub() {
       </header>
 
       {error ? <div className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.35fr_0.65fr]">
+        <TiltCard className="overflow-hidden border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(247,147,26,0.18),transparent_28%),radial-gradient(circle_at_right,rgba(59,130,246,0.14),transparent_26%),rgba(255,255,255,0.03)]">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-xs uppercase tracking-[0.28em] text-white/40">Market Pulse</p>
+              <h2 className="mt-3 text-3xl font-bold text-white">Coinbase BTC realtime, Binance derivatives và quy đổi vàng bạc theo VND</h2>
+              <p className="mt-3 text-sm leading-6 text-white/60">
+                Màn hình này ưu tiên tín hiệu ngắn hạn 4h cho BTC, đồng thời bổ sung tỷ lệ OI / vốn hóa để soi nhanh nhóm coin đang đòn bẩy mạnh.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 xl:min-w-[320px]">
+              <MetricPill label="BTC bid" value={btc?.bid ? formatUsd(btc.bid) : '--'} />
+              <MetricPill label="BTC ask" value={btc?.ask ? formatUsd(btc.ask) : '--'} />
+              <MetricPill label="USD/VND" value={overview ? formatVnd(overview.usdToVnd) : '--'} />
+              <MetricPill label="BTC volume 24h" value={btc?.volume24h ? formatCompact(btc.volume24h) : '--'} />
+            </div>
+          </div>
+        </TiltCard>
+
+        <TiltCard className="border-cyan-400/15 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.15),transparent_32%),rgba(255,255,255,0.03)]">
+          <p className="text-xs uppercase tracking-[0.22em] text-cyan-200/60">Nguồn dữ liệu</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className={badgeClass}>Coinbase</span>
+            <span className={badgeClass}>Binance Futures</span>
+            <span className={badgeClass}>Yahoo Finance</span>
+            <span className={badgeClass}>CoinGecko</span>
+          </div>
+          <div className="mt-6 rounded-2xl border border-white/10 bg-black/15 p-4">
+            <p className="text-sm text-white/55">OI / Market Cap không cần API key</p>
+            <p className="mt-2 text-lg font-semibold text-white">Binance open interest + CoinGecko market cap</p>
+            <p className="mt-2 text-sm text-white/45">
+              Bảng top 5 bên dưới được tự tính từ open interest công khai trên Binance Futures và vốn hóa công khai từ CoinGecko.
+            </p>
+          </div>
+        </TiltCard>
+      </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <TiltCard className="bg-gradient-to-br from-[#F7931A]/20 to-transparent border-[#F7931A]/30">
@@ -354,6 +404,73 @@ export default function TradingHub() {
           </div>
         </TiltCard>
       </div>
+
+      <TiltCard className="border-fuchsia-400/15 bg-[radial-gradient(circle_at_top_right,rgba(217,70,239,0.12),transparent_28%),rgba(255,255,255,0.03)]">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.24em] text-fuchsia-200/55">OI / Market Cap Ranking</p>
+            <h2 className="mt-2 text-2xl font-bold text-white">Top 5 coin có OI / vốn hóa thị trường cao nhất</h2>
+            <p className="mt-2 text-sm text-white/50">Ưu tiên các coin đang bị đòn bẩy hóa mạnh so với quy mô vốn hóa hiện tại.</p>
+          </div>
+          <div className="text-sm text-white/45">Tính từ Binance Futures + CoinGecko</div>
+        </div>
+
+        {topOiMarketCapCoins.length ? (
+          <div className="mt-6 grid gap-4 lg:grid-cols-5">
+            {topOiMarketCapCoins.map((coin, index) => (
+              <div
+                key={coin.symbol}
+                className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] p-4 shadow-[0_18px_35px_rgba(0,0,0,0.18)]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-white/35">#{index + 1}</p>
+                    <p className="mt-2 text-2xl font-bold text-white">{coin.symbol}</p>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${coin.priceChangePercent4h >= 0 ? 'bg-emerald-400/15 text-emerald-300' : 'bg-rose-400/15 text-rose-300'}`}>
+                    {formatPercent(coin.priceChangePercent4h)}
+                  </span>
+                </div>
+
+                <div className="mt-5 space-y-3 text-sm">
+                  <div className="rounded-2xl border border-white/8 bg-black/15 px-3 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-white/40">OI / MCAP</p>
+                    <p className="mt-2 text-xl font-semibold text-fuchsia-200">{formatRatio(coin.oiMarketCapRatio)}</p>
+                  </div>
+                  <div className="flex items-center justify-between text-white/65">
+                    <span>Giá</span>
+                    <span className="font-medium text-white/90">{formatUsd(coin.price)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-white/65">
+                    <span>OI</span>
+                    <span className="font-medium text-white/90">{formatCompact(coin.openInterestUsd)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-white/65">
+                    <span>Vốn hóa</span>
+                    <span className="font-medium text-white/90">{formatCompact(coin.marketCapUsd)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-white/65">
+                    <span>OI 4h</span>
+                    <span className={coin.oiChangePercent4h >= 0 ? 'font-medium text-emerald-300' : 'font-medium text-rose-300'}>
+                      {formatPercent(coin.oiChangePercent4h)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-white/65">
+                    <span>Vol 4h</span>
+                    <span className={coin.volumeChangePercent4h >= 0 ? 'font-medium text-emerald-300' : 'font-medium text-rose-300'}>
+                      {formatPercent(coin.volumeChangePercent4h)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-6 rounded-[28px] border border-dashed border-white/14 bg-black/15 px-6 py-8 text-center text-sm text-white/55">
+            Chưa lấy được dữ liệu xếp hạng OI / vốn hóa từ Binance Futures và CoinGecko ở lần tải này.
+          </div>
+        )}
+      </TiltCard>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <TiltCard>
