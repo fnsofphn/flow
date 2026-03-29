@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 interface ActivityDraft {
   id: number;
   name: string;
-  cost: number;
+  cost: string;
 }
 
 interface StoredActivity {
@@ -34,7 +34,7 @@ interface TodoSuggestion {
 const createActivityDraft = (seed?: Partial<ActivityDraft>): ActivityDraft => ({
   id: Date.now() + Math.floor(Math.random() * 1000),
   name: '',
-  cost: 0,
+  cost: '',
   ...seed,
 });
 
@@ -141,7 +141,7 @@ export default function DatePlanner() {
       time,
       activities:
         plan.date_plan_activities.map((activity) =>
-          createActivityDraft({ name: activity.name, cost: Number(activity.cost || 0) }),
+          createActivityDraft({ name: activity.name, cost: activity.cost ? String(Number(activity.cost)) : '' }),
         ) || [createActivityDraft()],
     });
     setIsDatetimePickerOpen(false);
@@ -182,7 +182,7 @@ export default function DatePlanner() {
   const handleApplyTodoSuggestion = (todo: TodoSuggestion) => {
     setForm((current) => ({
       ...current,
-      activities: [...current.activities, createActivityDraft({ name: todo.task, cost: Number(todo.cost || 0) })],
+      activities: [...current.activities, createActivityDraft({ name: todo.task, cost: todo.cost ? String(Number(todo.cost)) : '' })],
     }));
   };
 
@@ -596,8 +596,8 @@ export default function DatePlanner() {
                               <input
                                 type="number"
                                 value={activity.cost}
-                                onChange={(e) => handleActivityChange(activity.id, 'cost', Number(e.target.value || 0))}
-                                placeholder="0"
+                                onChange={(e) => handleActivityChange(activity.id, 'cost', e.target.value)}
+                                placeholder=""
                                 className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 pr-16 text-white placeholder:text-white/25 focus:border-pink-400 focus:outline-none"
                               />
                               <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold uppercase tracking-[0.16em] text-white/45">

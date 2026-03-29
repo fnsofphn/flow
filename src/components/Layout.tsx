@@ -8,6 +8,8 @@ import MusicPlayer from './MusicPlayer';
 import ParticlesBackground from './ParticlesBackground';
 
 const DESKTOP_BREAKPOINT = 768;
+const MOBILE_SIDEBAR_WIDTH = 280;
+const MOBILE_SIDEBAR_THRESHOLD = 140;
 const SIDEBAR_DEFAULT_WIDTH = 256;
 const SIDEBAR_MIN_WIDTH = 72;
 const SIDEBAR_MAX_WIDTH = 320;
@@ -31,10 +33,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return Math.min(SIDEBAR_MAX_WIDTH, Math.max(0, parsedWidth));
   });
   const [isDraggingSidebar, setIsDraggingSidebar] = useState(false);
+  const [mobileSidebarOffset, setMobileSidebarOffset] = useState(-MOBILE_SIDEBAR_WIDTH);
+  const [isDraggingMobileSidebar, setIsDraggingMobileSidebar] = useState(false);
   const dragStateRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const mobileDragStateRef = useRef<{ startX: number; startOffset: number } | null>(null);
 
   const isSidebarCollapsed = sidebarWidth === 0;
   const shouldShowLabels = sidebarWidth >= SIDEBAR_LABEL_THRESHOLD;
+  const isMobileSidebarOpen = mobileSidebarOffset > -MOBILE_SIDEBAR_WIDTH + 1;
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -90,8 +96,48 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     };
   }, [isDraggingSidebar]);
 
+  useEffect(() => {
+    if (!isDraggingMobileSidebar) {
+      return;
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const dragState = mobileDragStateRef.current;
+
+      if (!dragState) {
+        return;
+      }
+
+      const nextOffset = Math.min(
+        0,
+        Math.max(-MOBILE_SIDEBAR_WIDTH, dragState.startOffset + event.clientX - dragState.startX),
+      );
+
+      setMobileSidebarOffset(nextOffset);
+    };
+
+    const handlePointerUp = () => {
+      setIsDraggingMobileSidebar(false);
+      mobileDragStateRef.current = null;
+
+      setMobileSidebarOffset((currentOffset) => (currentOffset > -MOBILE_SIDEBAR_THRESHOLD ? 0 : -MOBILE_SIDEBAR_WIDTH));
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [isDraggingMobileSidebar]);
+
   const handleSidebarToggle = () => {
     setSidebarWidth((currentWidth) => (currentWidth === 0 ? SIDEBAR_DEFAULT_WIDTH : 0));
+  };
+
+  const handleMobileSidebarToggle = () => {
+    setMobileSidebarOffset((currentOffset) => (currentOffset === 0 ? -MOBILE_SIDEBAR_WIDTH : 0));
   };
 
   const handleSidebarDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -109,21 +155,137 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setIsDraggingSidebar(true);
   };
 
+  const handleMobileSidebarDragStart = (event: React.PointerEvent<HTMLDivElement | HTMLButtonElement>) => {
+    if (window.innerWidth >= DESKTOP_BREAKPOINT) {
+      return;
+    }
+
+    event.preventDefault();
+
+    mobileDragStateRef.current = {
+      startX: event.clientX,
+      startOffset: mobileSidebarOffset,
+    };
+
+    setIsDraggingMobileSidebar(true);
+  };
+
   return (
     <div className="relative min-h-screen bg-transparent md:flex md:h-screen md:overflow-hidden">
       <ParticlesBackground />
 
       <div className="sticky top-0 z-40 border-b border-white/10 bg-[rgba(10,25,47,0.72)] px-4 py-3 backdrop-blur-xl md:hidden">
-        <div className="mx-auto flex max-w-7xl items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 shadow-lg shadow-orange-500/30">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 shadow-lg shadow-orange-500/30">
+              <span className="text-xl font-bold">NC</span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white">NamCy</p>
+              <p className="text-xs text-white/55">Dieu huong module tren mobile</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleMobileSidebarToggle}
+            onPointerDown={handleMobileSidebarDragStart}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 backdrop-blur-xl transition hover:border-orange-400/60 hover:text-white"
+            aria-label={isMobileSidebarOpen ? 'An thanh dieu huong' : 'Mo thanh dieu huong'}
+          >
+            {isMobileSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+
+      <div className="pointer-events-none fixed inset-y-0 left-0 z-[90] flex items-center md:hidden">
+        <div
+          className={cn(
+            'pointer-events-auto ml-1 flex h-24 w-5 cursor-ew-resize items-center justify-center rounded-full border border-white/10 bg-[rgba(10,25,47,0.82)] text-white/50 shadow-lg shadow-black/25 backdrop-blur-xl transition',
+            isMobileSidebarOpen ? 'opacity-0' : 'opacity-100',
+          )}
+          onPointerDown={handleMobileSidebarDragStart}
+          aria-hidden={isMobileSidebarOpen}
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
+      </div>
+
+      {isMobileSidebarOpen ? (
+        <button
+          type="button"
+          aria-label="Dong thanh dieu huong"
+          className="fixed inset-0 z-[91] bg-black/55 backdrop-blur-[2px] md:hidden"
+          onClick={() => setMobileSidebarOffset(-MOBILE_SIDEBAR_WIDTH)}
+        />
+      ) : null}
+
+      <motion.aside
+        initial={false}
+        animate={{ x: mobileSidebarOffset }}
+        transition={isDraggingMobileSidebar ? { duration: 0 } : { type: 'spring', stiffness: 260, damping: 30 }}
+        className="fixed inset-y-0 left-0 z-[92] flex w-[280px] flex-col border-r border-white/10 bg-[rgba(10,25,47,0.92)] px-3 py-6 shadow-2xl shadow-black/35 backdrop-blur-xl md:hidden"
+      >
+        <div className="mb-8 flex items-center gap-3 rounded-2xl px-3 py-2">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 shadow-lg shadow-orange-500/30">
             <span className="text-xl font-bold">NC</span>
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-white">NamCy</p>
-            <p className="text-xs text-white/55">Điều hướng tối ưu cho điện thoại</p>
+            <p className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-xl font-bold tracking-tight text-transparent">
+              NamCy
+            </p>
+            <p className="text-xs text-white/55">Keo ra de xem nav, keo vao de an</p>
           </div>
         </div>
-      </div>
+
+        <nav className="no-scrollbar flex-1 space-y-2 overflow-y-auto">
+          {navigationItems.map((item) => (
+            <NavLink
+              key={`mobile-${item.path}`}
+              to={item.path}
+              onClick={() => setMobileSidebarOffset(-MOBILE_SIDEBAR_WIDTH)}
+              className={({ isActive }) =>
+                cn(
+                  'group relative flex items-center gap-4 rounded-xl px-4 py-3 transition-all duration-300',
+                  isActive ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white',
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {item.icon ? (
+                    <item.icon
+                      className={cn(
+                        'h-5 w-5 shrink-0 transition-transform duration-300',
+                        isActive ? 'scale-110' : 'group-hover:scale-110',
+                      )}
+                    />
+                  ) : null}
+                  <span className="truncate font-medium">{item.label}</span>
+                  {isActive ? (
+                    <motion.div
+                      layoutId="activeMobileNav"
+                      className="absolute left-0 h-8 w-1 rounded-r-full bg-orange-500"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  ) : null}
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div
+          className="absolute right-0 top-1/2 flex h-28 w-5 -translate-y-1/2 translate-x-1/2 cursor-ew-resize items-center justify-center rounded-full border border-white/10 bg-[rgba(10,25,47,0.88)] text-white/45 shadow-lg shadow-black/25"
+          onPointerDown={handleMobileSidebarDragStart}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize mobile navigation"
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
+      </motion.aside>
 
       <motion.aside
         initial={{ x: -100, opacity: 0 }}
@@ -151,7 +313,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <p className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-xl font-bold tracking-tight text-transparent">
                     NamCy
                   </p>
-                  <p className="text-xs text-white/55">Thanh điều hướng module</p>
+                  <p className="text-xs text-white/55">Thanh dieu huong module</p>
                 </div>
               ) : null}
             </div>
@@ -217,8 +379,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             handleSidebarToggle();
           }}
           className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-[rgba(10,25,47,0.78)] text-white/70 shadow-lg shadow-black/20 backdrop-blur-xl transition hover:border-orange-400/60 hover:text-white"
-          aria-label={isSidebarCollapsed ? 'Mở thanh điều hướng' : 'Ẩn thanh điều hướng'}
-          title={isSidebarCollapsed ? 'Mở thanh điều hướng' : 'Ẩn thanh điều hướng'}
+          aria-label={isSidebarCollapsed ? 'Mo thanh dieu huong' : 'An thanh dieu huong'}
+          title={isSidebarCollapsed ? 'Mo thanh dieu huong' : 'An thanh dieu huong'}
         >
           {isSidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
         </button>
@@ -235,35 +397,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {children}
         </motion.div>
       </main>
-
-      <motion.nav
-        initial={{ y: 80, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.35 }}
-        className="fixed inset-x-3 bottom-3 z-50 md:hidden"
-      >
-        <div className="glass-card no-scrollbar overflow-x-auto rounded-[28px] border border-white/15 px-2 py-2">
-          <div className="flex min-w-max items-center gap-1">
-            {navigationItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  cn(
-                    'flex min-w-[68px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-[11px] font-medium transition-all',
-                    isActive
-                      ? 'bg-white/12 text-white'
-                      : 'text-white/55 hover:bg-white/6 hover:text-white',
-                  )
-                }
-              >
-                {item.icon ? <item.icon className="h-4 w-4" /> : null}
-                <span className="line-clamp-1 text-center">{item.label}</span>
-              </NavLink>
-            ))}
-          </div>
-        </div>
-      </motion.nav>
 
       <MusicPlayer />
     </div>
