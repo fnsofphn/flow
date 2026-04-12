@@ -25,6 +25,8 @@ type Memory = {
   likes: number;
 };
 
+const MEMORIES_BUCKET = 'memories-images';
+
 const emptyForm = {
   title: '',
   memoryDate: '',
@@ -62,6 +64,7 @@ export default function Memories() {
   const [form, setForm] = useState(emptyForm);
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
   const [uploadLabel, setUploadLabel] = useState('Chưa chọn ảnh từ máy');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const featuredMemory = useMemo(() => memories[0] ?? null, [memories]);
@@ -71,6 +74,10 @@ export default function Memories() {
     setForm(emptyForm);
     setEditingMemory(null);
     setUploadLabel('Chưa chọn ảnh từ máy');
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const closeModal = () => {
@@ -124,15 +131,36 @@ export default function Memories() {
 
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === 'string') {
-        setForm((current) => ({ ...current, imageUrl: result }));
-        setUploadLabel(file.name);
-      }
-    };
-    reader.readAsDataURL(file);
+    if (!file.type.startsWith('image/')) {
+      setError('Vui lòng chọn một tệp ảnh hợp lệ.');
+      return;
+    }
+
+    setError(null);
+    setSelectedFile(file);
+    setUploadLabel(file.name);
+
+    const previewUrl = URL.createObjectURL(file);
+    setForm((current) => ({ ...current, imageUrl: previewUrl }));
+  };
+
+  const uploadMemoryImage = async (file: File) => {
+    const extension = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+    const safeName = sanitizeFileName(file.name.replace(/\.[^.]+$/, ''));
+    const filePath = `${Date.now()}-${safeName}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage.from(MEMORIES_BUCKET).upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type || undefined,
+    });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data } = supabase.storage.from(MEMORIES_BUCKET).getPublicUrl(filePath);
+    return data.publicUrl;
   };
 
   const handleSubmit = async () => {
@@ -150,11 +178,25 @@ export default function Memories() {
     setIsSaving(true);
     setError(null);
 
+    let imageUrl = form.imageUrl.trim();
+
+    try {
+      if (selectedFile) {
+        imageUrl = await uploadMemoryImage(selectedFile);
+      }
+    } catch (uploadIssue) {
+      const message =
+        uploadIssue instanceof Error ? uploadIssue.message : 'Không thể tải ảnh lên lúc này.';
+      setError(`Tải ảnh thất bại: ${message}`);
+      setIsSaving(false);
+      return;
+    }
+
     const payload = {
       title: form.title.trim(),
       memory_date: form.memoryDate,
       location: form.location.trim(),
-      image_url: form.imageUrl.trim(),
+      image_url: imageUrl,
       description: form.description.trim(),
     };
 
@@ -441,7 +483,15 @@ export default function Memories() {
 
                   <p className="mt-3 text-sm text-white/45">{uploadLabel}</p>
 
-                  <input value={form.imageUrl} onChange={(event) => setForm((current) => ({ ...current, imageUrl: event.target.value }))} placeholder="Liên kết ảnh công khai hoặc data URL" className="mt-4 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-400 focus:outline-none" />
+                  <input
+                    value={form.imageUrl}
+                    onChange={(event) => {
+                      setSelectedFile(null);
+                      setForm((current) => ({ ...current, imageUrl: event.target.value }));
+                    }}
+                    placeholder="Liên kết ảnh công khai"
+                    className="mt-4 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-400 focus:outline-none"
+                  />
 
                   {form.imageUrl ? (
                     <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
