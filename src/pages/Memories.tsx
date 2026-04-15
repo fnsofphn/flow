@@ -59,12 +59,12 @@ export default function Memories() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
   const [uploadLabel, setUploadLabel] = useState('Chưa chọn ảnh từ máy');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const featuredMemory = useMemo(() => memories[0] ?? null, [memories]);
@@ -74,7 +74,7 @@ export default function Memories() {
     setForm(emptyForm);
     setEditingMemory(null);
     setUploadLabel('Chưa chọn ảnh từ máy');
-    setSelectedFile(null);
+    setIsUploadingImage(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -126,7 +126,7 @@ export default function Memories() {
     setIsModalOpen(true);
   };
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
@@ -137,11 +137,21 @@ export default function Memories() {
     }
 
     setError(null);
-    setSelectedFile(file);
     setUploadLabel(file.name);
+    setIsUploadingImage(true);
 
-    const previewUrl = URL.createObjectURL(file);
-    setForm((current) => ({ ...current, imageUrl: previewUrl }));
+    try {
+      const publicUrl = await uploadMemoryImage(file);
+      setForm((current) => ({ ...current, imageUrl: publicUrl }));
+      setUploadLabel(`${file.name} - đã tải lên`);
+    } catch (uploadIssue) {
+      const message =
+        uploadIssue instanceof Error ? uploadIssue.message : 'Không thể tải ảnh lên lúc này.';
+      setError(`Tải ảnh thất bại: ${message}`);
+      setUploadLabel(`${file.name} - tải lên thất bại`);
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const uploadMemoryImage = async (file: File) => {
@@ -178,25 +188,11 @@ export default function Memories() {
     setIsSaving(true);
     setError(null);
 
-    let imageUrl = form.imageUrl.trim();
-
-    try {
-      if (selectedFile) {
-        imageUrl = await uploadMemoryImage(selectedFile);
-      }
-    } catch (uploadIssue) {
-      const message =
-        uploadIssue instanceof Error ? uploadIssue.message : 'Không thể tải ảnh lên lúc này.';
-      setError(`Tải ảnh thất bại: ${message}`);
-      setIsSaving(false);
-      return;
-    }
-
     const payload = {
       title: form.title.trim(),
       memory_date: form.memoryDate,
       location: form.location.trim(),
-      image_url: imageUrl,
+      image_url: form.imageUrl.trim(),
       description: form.description.trim(),
     };
 
@@ -460,6 +456,12 @@ export default function Memories() {
               </div>
 
               <div className="space-y-4">
+                {error ? (
+                  <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                    {error}
+                  </div>
+                ) : null}
+
                 <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="Tiêu đề kỷ niệm" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-400 focus:outline-none" />
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -482,11 +484,11 @@ export default function Memories() {
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
 
                   <p className="mt-3 text-sm text-white/45">{uploadLabel}</p>
+                  {isUploadingImage ? <p className="mt-2 text-sm text-orange-200">Đang tải ảnh lên Supabase...</p> : null}
 
                   <input
                     value={form.imageUrl}
                     onChange={(event) => {
-                      setSelectedFile(null);
                       setForm((current) => ({ ...current, imageUrl: event.target.value }));
                     }}
                     placeholder="Liên kết ảnh công khai"
@@ -511,7 +513,7 @@ export default function Memories() {
               </div>
 
               <div className="mt-6 flex justify-end">
-                <button onClick={() => void handleSubmit()} disabled={isSaving} className="rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-3 font-semibold text-white shadow-lg shadow-orange-500/30 disabled:opacity-60">
+                <button onClick={() => void handleSubmit()} disabled={isSaving || isUploadingImage} className="rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-3 font-semibold text-white shadow-lg shadow-orange-500/30 disabled:opacity-60">
                   {isSaving ? 'Đang lưu...' : editingMemory ? 'Lưu thay đổi' : 'Lưu kỷ niệm'}
                 </button>
               </div>
