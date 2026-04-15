@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { GripVertical, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Compass, GripVertical, PanelLeftClose, PanelLeftOpen, Sparkles, Stars } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { navigationItems } from '../app/routes';
 import MusicPlayer from './MusicPlayer';
@@ -19,6 +19,7 @@ const SIDEBAR_LABEL_THRESHOLD = 208;
 const SIDEBAR_STORAGE_KEY = 'flow-layout-sidebar-width';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     if (typeof window === 'undefined') {
       return SIDEBAR_DEFAULT_WIDTH;
@@ -40,6 +41,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const isSidebarCollapsed = sidebarWidth === 0;
   const shouldShowLabels = sidebarWidth >= SIDEBAR_LABEL_THRESHOLD;
+  const activeItem = navigationItems.find((item) => item.path === location.pathname);
+  const todayLabel = new Intl.DateTimeFormat('vi-VN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date());
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -142,21 +149,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="relative min-h-screen bg-transparent md:flex md:h-screen md:overflow-hidden">
       <ParticlesBackground />
 
-      <div className="sticky top-0 z-40 border-b border-white/10 bg-[rgba(10,25,47,0.72)] px-4 py-3 backdrop-blur-xl md:hidden">
+      <div className="app-shell-panel sticky top-0 z-40 border-b px-4 py-3 md:hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 shadow-lg shadow-orange-500/30">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#f49a62] via-[#ee7a74] to-[#b86a43] shadow-lg shadow-orange-500/30">
               <span className="text-xl font-bold">NC</span>
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-white">NamCy</p>
-              <p className="text-xs text-white/55">Dieu huong module tren mobile</p>
+              <p className="text-sm font-semibold text-white">NamCy Orbit</p>
+              <p className="text-xs text-white/55">{activeItem?.label ?? 'Bảng điều khiển cảm xúc'}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={handleMobileSidebarToggle}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 backdrop-blur-xl transition hover:border-orange-400/60 hover:text-white"
+            className="app-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/70 transition hover:border-orange-400/60 hover:text-white"
             aria-label={isMobileSidebarOpen ? 'An thanh dieu huong' : 'Mo thanh dieu huong'}
           >
             {isMobileSidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
@@ -168,7 +175,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           className={cn(
-            'pointer-events-auto ml-1 flex h-24 w-5 cursor-ew-resize items-center justify-center rounded-full border border-white/10 bg-[rgba(10,25,47,0.82)] text-white/50 shadow-lg shadow-black/25 backdrop-blur-xl transition',
+            'pointer-events-auto ml-1 flex h-24 w-5 cursor-ew-resize items-center justify-center rounded-full border border-white/10 bg-[rgba(8,17,31,0.82)] text-white/50 shadow-lg shadow-black/25 backdrop-blur-xl transition',
             isMobileSidebarOpen ? 'opacity-0' : 'opacity-100',
           )}
           onClick={() => setIsMobileSidebarOpen(true)}
@@ -199,17 +206,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         dragListener={isMobileSidebarOpen}
         onDragStart={handleMobileSidebarDragStart}
         onDragEnd={handleMobileSidebarDragEnd}
-        className="fixed inset-y-0 left-0 z-[92] flex w-[280px] flex-col border-r border-white/10 bg-[rgba(10,25,47,0.92)] px-3 py-6 shadow-2xl shadow-black/35 backdrop-blur-xl [touch-action:pan-y] [will-change:transform] md:hidden"
+        className="app-shell-panel fixed inset-y-0 left-0 z-[92] flex w-[280px] flex-col border-r px-3 py-6 shadow-2xl shadow-black/35 [touch-action:pan-y] [will-change:transform] md:hidden"
       >
         <div className="mb-8 flex items-center gap-3 rounded-2xl px-3 py-2">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 shadow-lg shadow-orange-500/30">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#f49a62] via-[#ee7a74] to-[#b86a43] shadow-lg shadow-orange-500/30">
             <span className="text-xl font-bold">NC</span>
           </div>
           <div className="min-w-0">
-            <p className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-xl font-bold tracking-tight text-transparent">
-              NamCy
+            <p className="headline-serif bg-gradient-to-r from-white to-white/60 bg-clip-text text-xl font-bold tracking-tight text-transparent">
+              NamCy Orbit
             </p>
-            <p className="text-xs text-white/55">Keo ra de xem nav, keo vao de an</p>
+            <p className="text-xs text-white/55">Nhẹ hơn, đẹp hơn, dễ dùng hơn cho Cy</p>
           </div>
         </div>
 
@@ -273,22 +280,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         className="relative z-40 hidden h-full shrink-0 overflow-hidden md:block"
       >
         {!isSidebarCollapsed ? (
-          <div className="flex h-full flex-col border-r border-white/10 bg-[rgba(10,25,47,0.5)] px-3 py-6 backdrop-blur-xl">
+          <div className="app-shell-panel flex h-full flex-col border-r px-3 py-6">
             <div
               className={cn(
                 'mb-8 flex items-center gap-3 rounded-2xl px-3 py-2',
                 shouldShowLabels ? 'justify-start' : 'justify-center',
               )}
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 shadow-lg shadow-orange-500/30">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#f49a62] via-[#ee7a74] to-[#b86a43] shadow-lg shadow-orange-500/30">
                 <span className="text-xl font-bold">NC</span>
               </div>
               {shouldShowLabels ? (
                 <div className="min-w-0">
-                  <p className="bg-gradient-to-r from-white to-white/60 bg-clip-text text-xl font-bold tracking-tight text-transparent">
-                    NamCy
+                  <p className="headline-serif bg-gradient-to-r from-white to-white/60 bg-clip-text text-2xl font-bold tracking-tight text-transparent">
+                    NamCy Orbit
                   </p>
-                  <p className="text-xs text-white/55">Thanh dieu huong module</p>
+                  <p className="text-xs text-white/55">Hệ điều hành yêu thương cho Cy</p>
                 </div>
               ) : null}
             </div>
@@ -332,6 +339,30 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </NavLink>
               ))}
             </nav>
+
+            {shouldShowLabels ? (
+              <div className="mt-6 space-y-3 rounded-[28px] border border-white/10 bg-black/20 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.28em] text-white/35">Pulse</p>
+                    <p className="mt-2 text-sm font-semibold text-white/90">{todayLabel}</p>
+                  </div>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f49a62]/30 to-[#f25f7a]/20">
+                    <Stars className="h-5 w-5 text-orange-200" />
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <div className="app-chip flex items-center gap-3 rounded-2xl px-3 py-2 text-sm text-white/75">
+                    <Sparkles className="h-4 w-4 text-orange-300" />
+                    Lối đi ngắn hơn cho những việc Cy hay dùng
+                  </div>
+                  <div className="app-chip flex items-center gap-3 rounded-2xl px-3 py-2 text-sm text-white/75">
+                    <Compass className="h-4 w-4 text-sky-200" />
+                    {activeItem?.label ?? 'Tổng quan'} đang là điểm chạm hiện tại
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </motion.aside>
@@ -353,7 +384,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             event.stopPropagation();
             handleSidebarToggle();
           }}
-          className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-[rgba(10,25,47,0.78)] text-white/70 shadow-lg shadow-black/20 backdrop-blur-xl transition hover:border-orange-400/60 hover:text-white"
+          className="app-chip relative z-10 flex h-10 w-10 items-center justify-center rounded-full text-white/70 shadow-lg shadow-black/20 transition hover:border-orange-400/60 hover:text-white"
           aria-label={isSidebarCollapsed ? 'Mo thanh dieu huong' : 'An thanh dieu huong'}
           title={isSidebarCollapsed ? 'Mo thanh dieu huong' : 'An thanh dieu huong'}
         >
@@ -363,6 +394,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       <main className="relative z-10 min-w-0 flex-1 px-4 pb-40 pt-4 md:h-full md:overflow-y-auto md:p-8">
+        <div className="app-shell-panel sticky top-4 z-30 mb-6 hidden items-center justify-between gap-4 rounded-[28px] px-5 py-4 md:flex">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-[0.32em] text-white/35">Cy Navigation Layer</p>
+            <h2 className="headline-serif truncate text-2xl font-semibold text-white">
+              {activeItem?.label ?? 'Tổng quan'}
+            </h2>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="app-chip rounded-full px-4 py-2 text-sm text-white/75">
+              {todayLabel}
+            </div>
+            <div className="app-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/85">
+              <Sparkles className="h-4 w-4 text-orange-300" />
+              Cy-first experience
+            </div>
+          </div>
+        </div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

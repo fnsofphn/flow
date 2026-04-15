@@ -1,11 +1,15 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import {
+  ArrowRight,
   CalendarHeart,
   CheckCircle2,
+  Clock3,
   Heart,
   Image as ImageIcon,
   Mail,
+  Sparkles,
+  Stars,
   Wallet,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +21,11 @@ type FeaturedMemory = {
   title: string;
   image_url: string;
   description: string;
+};
+
+type DashboardPulse = {
+  memoryCount: number;
+  openTodoCount: number;
 };
 
 const quickDestinations = [
@@ -56,20 +65,29 @@ export default function Dashboard() {
   const [quickEmotion, setQuickEmotion] = useState('Yêu thương');
   const [unlockDays, setUnlockDays] = useState(3);
   const [featuredMemory, setFeaturedMemory] = useState<FeaturedMemory | null>(null);
+  const [pulse, setPulse] = useState<DashboardPulse>({ memoryCount: 0, openTodoCount: 0 });
 
   useEffect(() => {
-    const loadFeaturedMemory = async () => {
-      const { data } = await supabase
-        .from('memories')
-        .select('id, title, image_url, description')
-        .order('memory_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+    const loadDashboardData = async () => {
+      const [{ data: memory }, { count: memoryCount }, { count: openTodoCount }] = await Promise.all([
+        supabase
+          .from('memories')
+          .select('id, title, image_url, description')
+          .order('memory_date', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase.from('memories').select('id', { count: 'exact', head: true }),
+        supabase.from('todos').select('id', { count: 'exact', head: true }).eq('done', false),
+      ]);
 
-      setFeaturedMemory((data as FeaturedMemory | null) ?? null);
+      setFeaturedMemory((memory as FeaturedMemory | null) ?? null);
+      setPulse({
+        memoryCount: memoryCount ?? 0,
+        openTodoCount: openTodoCount ?? 0,
+      });
     };
 
-    void loadFeaturedMemory();
+    void loadDashboardData();
   }, []);
 
   const handleQuickLetter = () => {
@@ -87,28 +105,92 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 pb-24">
-      <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="mb-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            Bảng điều khiển của{' '}
-            <span className="bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">
-              NamCy
-            </span>
-          </h1>
-          <p className="text-base text-white/60 sm:text-lg">
-            Chạm đúng nơi bạn cần: kỷ niệm, việc cần làm, tài chính và hộp tâm thư.
-          </p>
-        </motion.div>
+      <motion.section
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-[34px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,248,241,0.12),rgba(255,248,241,0.03)),radial-gradient(circle_at_top_right,rgba(242,95,122,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(244,154,98,0.2),transparent_24%),rgba(8,17,31,0.7)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-8 xl:p-10"
+      >
+        <div className="absolute right-6 top-6 hidden h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.24),transparent_60%)] blur-2xl md:block" />
+        <div className="relative grid gap-8 xl:grid-cols-[1.2fr_0.8fr]">
+          <div>
+            <div className="app-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/80">
+              <Stars className="h-4 w-4 text-orange-300" />
+              Hệ điều hành yêu thương cho Cy
+            </div>
+            <h1 className="headline-serif mt-5 max-w-3xl text-4xl font-semibold leading-tight text-white sm:text-5xl xl:text-6xl">
+              Mọi điều Cy cần,
+              <span className="bg-gradient-to-r from-[#f6c18b] via-[#f49a62] to-[#f25f7a] bg-clip-text text-transparent">
+                {' '}đều ở đúng chỗ và đúng cảm xúc.
+              </span>
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-8 text-white/68 sm:text-lg">
+              NamCy giờ không chỉ là nơi cất dữ liệu, mà là một không gian dịu mắt, dễ chạm,
+              và đủ tinh tế để Cy muốn mở lên mỗi ngày.
+            </p>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="inline-flex items-center gap-3 self-start rounded-2xl border border-white/10 bg-white/10 px-4 py-2 backdrop-blur-md sm:self-auto sm:rounded-full"
-        >
-          <Heart className="h-5 w-5 animate-pulse fill-pink-500 text-pink-500" />
-          <span className="font-medium text-white/90">Hôm nay ưu tiên lưu lại điều tốt đẹp</span>
-        </motion.div>
-      </header>
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              <div className="app-chip rounded-[24px] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Khoảnh khắc</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{pulse.memoryCount}</p>
+                <p className="mt-2 text-sm text-white/55">Kỷ niệm đã được giữ lại an toàn.</p>
+              </div>
+              <div className="app-chip rounded-[24px] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Việc mở</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{pulse.openTodoCount}</p>
+                <p className="mt-2 text-sm text-white/55">Việc còn chờ Cy xử lý hoặc xem qua.</p>
+              </div>
+              <div className="app-chip rounded-[24px] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Nhịp hôm nay</p>
+                <p className="mt-3 inline-flex items-center gap-2 text-lg font-semibold text-white">
+                  <Heart className="h-5 w-5 fill-pink-500 text-pink-500" />
+                  Dịu dàng và chủ động
+                </p>
+                <p className="mt-2 text-sm text-white/55">Ít thao tác hơn, nhiều niềm vui hơn.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            <div className="app-chip rounded-[28px] p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/35">Next best move</p>
+                  <h2 className="mt-3 text-2xl font-semibold text-white">Lưu nhanh một điều đẹp</h2>
+                  <p className="mt-3 text-sm leading-7 text-white/60">
+                    Từ giờ vào Kỷ niệm chỉ cần chọn ảnh là có thể lưu. Mọi thứ còn lại hệ thống tự đỡ cho Cy.
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-gradient-to-br from-[#f49a62]/25 to-[#f25f7a]/15 p-3">
+                  <Sparkles className="h-6 w-6 text-orange-200" />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/memories')}
+                className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition-transform hover:scale-[1.02]"
+              >
+                Mở Kỷ niệm
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="app-chip rounded-[28px] p-5">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/35">Nhắc khẽ</p>
+              <div className="mt-4 flex items-start gap-3">
+                <div className="rounded-2xl bg-white/8 p-3">
+                  <Clock3 className="h-5 w-5 text-sky-200" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-white">Cy không cần nhớ mọi thứ.</p>
+                  <p className="mt-2 text-sm leading-7 text-white/60">
+                    Dashboard này được làm để dẫn đường: ít nghĩ, ít tìm, ít bực mình khi cần quay lại một việc cũ.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.section>
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {quickDestinations.map((item, index) => {
@@ -126,7 +208,7 @@ export default function Dashboard() {
                   onClick={() => navigate(item.path)}
                   className="flex h-full w-full flex-col items-start gap-4 text-left"
                 >
-                  <div className="rounded-2xl bg-white/10 p-3">
+                  <div className="rounded-2xl bg-white/10 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                     <Icon className="h-6 w-6 text-white" />
                   </div>
                   <div>
@@ -222,13 +304,17 @@ export default function Dashboard() {
             )}
             <div className="relative z-10 flex h-full flex-col justify-end p-6">
               <p className="text-sm uppercase tracking-[0.28em] text-orange-300">Album kỷ niệm</p>
-              <h3 className="mt-3 text-2xl font-bold text-white sm:text-3xl">
+              <h3 className="headline-serif mt-3 text-3xl font-bold text-white sm:text-4xl">
                 {featuredMemory?.title ?? 'Mở ngay những khoảnh khắc đẹp nhất'}
               </h3>
               <p className="mt-3 max-w-md text-white/70">
                 {featuredMemory?.description ??
                   'Chỉnh sửa, thay ảnh, hoặc thêm ảnh mới trực tiếp từ máy ngay trong thư viện.'}
               </p>
+              <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-white/85">
+                Chạm để bước vào album
+                <ArrowRight className="h-4 w-4" />
+              </div>
             </div>
           </button>
         </TiltCard>
