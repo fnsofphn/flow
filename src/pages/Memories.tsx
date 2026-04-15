@@ -43,6 +43,8 @@ const sanitizeFileName = (value: string) =>
     .replace(/^-+|-+$/g, '')
     .toLowerCase() || 'ky-niem';
 
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
 const triggerBrowserDownload = (url: string, filename: string) => {
   const link = document.createElement('a');
   link.href = url;
@@ -174,14 +176,8 @@ export default function Memories() {
   };
 
   const handleSubmit = async () => {
-    if (
-      !form.title.trim() ||
-      !form.memoryDate ||
-      !form.location.trim() ||
-      !form.imageUrl.trim() ||
-      !form.description.trim()
-    ) {
-      setError('Hãy điền đủ tiêu đề, ngày, địa điểm, ảnh và mô tả kỷ niệm.');
+    if (!form.imageUrl.trim()) {
+      setError('Hãy chọn hoặc dán ảnh kỷ niệm trước khi lưu.');
       return;
     }
 
@@ -189,11 +185,11 @@ export default function Memories() {
     setError(null);
 
     const payload = {
-      title: form.title.trim(),
-      memory_date: form.memoryDate,
-      location: form.location.trim(),
+      title: form.title.trim() || 'Kỷ niệm mới',
+      memory_date: form.memoryDate || getTodayDate(),
+      location: form.location.trim() || 'Chưa cập nhật địa điểm',
       image_url: form.imageUrl.trim(),
-      description: form.description.trim(),
+      description: form.description.trim() || 'Chưa thêm mô tả.',
     };
 
     if (editingMemory) {
