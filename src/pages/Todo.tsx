@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState, type JSX, type MouseEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Calendar, CalendarDays, CheckCircle2, CheckSquare, Circle, Clock3, MapPin, Plus, RefreshCcw, X } from 'lucide-react';
+import { ArrowRight, Calendar, CalendarDays, CheckCircle2, CheckSquare, Circle, Clock3, MapPin, Plus, RefreshCcw, Sparkles, Stars, X } from 'lucide-react';
 import TiltCard from '../components/TiltCard';
 import { supabase } from '../lib/supabase';
 
@@ -228,7 +228,8 @@ export default function Todo() {
   const summary = useMemo(() => {
     const completed = todos.filter((todo) => todo.done).length;
     const budget = todos.reduce((sum, todo) => sum + Number(todo.cost || 0), 0);
-    return { completed, budget };
+    const open = todos.length - completed;
+    return { completed, budget, open };
   }, [todos]);
 
   const commentTreeByTodo = useMemo(() => {
@@ -735,49 +736,81 @@ export default function Todo() {
 
   return (
     <div className="space-y-8 pb-24">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            Việc cần làm
-            <CheckSquare className="h-8 w-8 text-blue-400" />
-          </h1>
-          <p className="text-base text-white/60 sm:text-lg">Theo dõi danh sách công việc chung theo thời gian thực.</p>
-        </motion.div>
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,248,241,0.11),rgba(255,248,241,0.03)),radial-gradient(circle_at_top_right,rgba(56,189,248,0.16),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(251,191,36,0.14),transparent_26%),rgba(8,17,31,0.72)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-8"
+      >
+        <div className="relative grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+          <div>
+            <div className="app-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/80">
+              <Stars className="h-4 w-4 text-cyan-200" />
+              Mission Grid
+            </div>
+            <h1 className="headline-serif mt-5 flex items-center gap-3 text-4xl font-semibold text-white sm:text-5xl">
+              Việc cần làm
+              <CheckSquare className="h-8 w-8 text-cyan-300" />
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-8 text-white/65 sm:text-lg">
+              Một bảng điều phối rõ ràng, nơi Nam và Cy thấy ngay việc nào đang mở, việc nào đã xong,
+              và mọi cuộc trao đổi đi kèm từng đầu việc.
+            </p>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <button
-            onClick={() => void loadTodos()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/10 sm:w-auto"
-          >
-            <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Tải lại
-          </button>
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setIsCreating(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-3 font-medium text-white shadow-lg shadow-blue-500/30 sm:w-auto"
-          >
-            <Plus className="h-5 w-5" />
-            Thêm việc mới
-          </motion.button>
+            <div className="mt-7 grid gap-3 sm:grid-cols-3">
+              <div className="app-chip rounded-[24px] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Tổng việc</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{todos.length}</p>
+                <p className="mt-2 text-sm text-white/55">Tất cả mission đang có trong hệ thống.</p>
+              </div>
+              <div className="app-chip rounded-[24px] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Đang mở</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{summary.open}</p>
+                <p className="mt-2 text-sm text-white/55">Những việc vẫn đang chờ hành động.</p>
+              </div>
+              <div className="app-chip rounded-[24px] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Ngân sách</p>
+                <p className="mt-3 text-2xl font-semibold text-white">{formatCurrency(summary.budget)}</p>
+                <p className="mt-2 text-sm text-white/55">Tổng chi phí dự kiến của toàn bộ việc.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            <div className="app-chip rounded-[28px] p-5">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/35">Quick actions</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <button
+                  onClick={() => void loadTodos()}
+                  className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/6 px-4 py-4 font-medium text-white/85 transition-colors hover:bg-white/10"
+                >
+                  <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  Tải lại
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsCreating(true)}
+                  className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-4 font-medium text-white shadow-lg shadow-blue-500/25"
+                >
+                  <Plus className="h-5 w-5" />
+                  Thêm việc mới
+                </motion.button>
+              </div>
+            </div>
+            <div className="app-chip rounded-[28px] p-5">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/35">Coordination note</p>
+              <p className="mt-3 text-sm leading-7 text-white/60">
+                Mỗi task nên có cảm giác như một mission card: rõ người phụ trách, rõ thời điểm,
+                có comment tại chỗ, reaction tại chỗ, và không cần nhảy màn để hiểu ngữ cảnh.
+              </p>
+              <div className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white/80">
+                Ít trượt ngữ cảnh hơn
+                <ArrowRight className="h-4 w-4" />
+              </div>
+            </div>
+          </div>
         </div>
-      </header>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <TiltCard className="bg-white/5">
-          <p className="text-sm uppercase tracking-[0.2em] text-white/40">Tổng việc</p>
-          <p className="mt-3 text-3xl font-bold text-white">{todos.length}</p>
-        </TiltCard>
-        <TiltCard className="bg-white/5">
-          <p className="text-sm uppercase tracking-[0.2em] text-white/40">Đã xong</p>
-          <p className="mt-3 text-3xl font-bold text-emerald-300">{summary.completed}</p>
-        </TiltCard>
-        <TiltCard className="bg-white/5">
-          <p className="text-sm uppercase tracking-[0.2em] text-white/40">Ngân sách</p>
-          <p className="mt-3 text-3xl font-bold text-orange-300">{formatCurrency(summary.budget)}</p>
-        </TiltCard>
-      </div>
+      </motion.section>
 
       {error ? <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
 
@@ -965,16 +998,16 @@ export default function Todo() {
               initial={{ opacity: 0, y: '100%' }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: '100%' }}
-              className="fixed bottom-0 left-0 right-0 z-[101] max-h-[90vh] overflow-y-auto rounded-t-3xl border border-white/10 bg-gray-900 p-4 shadow-2xl sm:p-6 md:left-1/2 md:top-1/2 md:w-[640px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl"
+              className="fixed bottom-0 left-0 right-0 z-[101] flex max-h-[90vh] flex-col rounded-t-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,248,241,0.08),rgba(255,248,241,0.03)),rgba(9,18,31,0.96)] shadow-2xl md:left-1/2 md:top-1/2 md:w-[640px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl"
             >
-              <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-white/10 px-4 py-4 sm:px-6">
                 <h2 className="text-2xl font-bold text-white">{editingTodoId ? 'Chỉnh sửa công việc' : 'Thêm việc mới'}</h2>
                 <button onClick={handleCloseForm} className="rounded-full bg-white/5 p-2 text-white/50 hover:text-white">
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <div className="space-y-4">
+              <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
                 <input value={form.task} onChange={(e) => setForm((current) => ({ ...current, task: e.target.value }))} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-blue-400 focus:outline-none" />
                 <div className="grid gap-4 md:grid-cols-[1.15fr_0.85fr]">
                   <div className="space-y-3">
@@ -1115,7 +1148,8 @@ export default function Todo() {
                 <input value={form.mapUrl} onChange={(e) => setForm((current) => ({ ...current, mapUrl: e.target.value }))} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-blue-400 focus:outline-none" />
               </div>
 
-              <div className="mt-6 flex justify-end">
+              <div className="sticky bottom-0 flex items-center justify-between gap-4 border-t border-white/10 bg-[rgba(9,18,31,0.92)] px-4 py-4 backdrop-blur sm:px-6">
+                <p className="text-sm text-white/55">Giữ mọi thứ rõ ràng nhưng vẫn thao tác thật nhanh.</p>
                 <button onClick={() => void handleSave()} disabled={isSaving} className="rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/30 disabled:opacity-60">
                   {isSaving ? 'Đang lưu...' : editingTodoId ? 'Cập nhật công việc' : 'Lưu công việc'}
                 </button>

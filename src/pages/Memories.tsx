@@ -1,7 +1,9 @@
 ﻿import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
+  ArrowRight,
   Calendar,
+  Download,
   Heart,
   ImagePlus,
   Image as ImageIcon,
@@ -9,6 +11,8 @@ import {
   PencilLine,
   Plus,
   RefreshCcw,
+  Sparkles,
+  Stars,
   Upload,
   X,
 } from 'lucide-react';
@@ -71,6 +75,10 @@ export default function Memories() {
 
   const featuredMemory = useMemo(() => memories[0] ?? null, [memories]);
   const timeline = useMemo(() => memories.slice(1), [memories]);
+  const totalLikes = useMemo(
+    () => memories.reduce((sum, memory) => sum + Number(memory.likes || 0), 0),
+    [memories],
+  );
 
   const resetForm = () => {
     setForm(emptyForm);
@@ -284,28 +292,77 @@ export default function Memories() {
 
   return (
     <div className="space-y-8 pb-24">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            Kỷ niệm của chúng ta
-            <Heart className="h-8 w-8 animate-pulse fill-pink-500 text-pink-500" />
-          </h1>
-          <p className="text-base text-white/60 sm:text-lg">
-            Lưu giữ, chỉnh sửa và làm mới những khoảnh khắc đẹp theo cách thật dễ chịu.
-          </p>
-        </motion.div>
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,248,241,0.12),rgba(255,248,241,0.03)),radial-gradient(circle_at_top_right,rgba(242,95,122,0.2),transparent_25%),radial-gradient(circle_at_bottom_left,rgba(244,154,98,0.16),transparent_24%),rgba(8,17,31,0.68)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-8"
+      >
+        <div className="relative grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <div className="app-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/80">
+              <Stars className="h-4 w-4 text-orange-300" />
+              Memory Atlas
+            </div>
+            <h1 className="headline-serif mt-5 flex items-center gap-3 text-4xl font-semibold text-white sm:text-5xl">
+              Kỷ niệm của chúng ta
+              <Heart className="h-8 w-8 animate-pulse fill-pink-500 text-pink-500" />
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-8 text-white/65 sm:text-lg">
+              Một thư viện cảm xúc nơi Cy chỉ cần chạm vào ảnh là có thể giữ lại khoảnh khắc,
+              chỉnh sửa nhẹ nhàng, và quay lại đúng ký ức cần xem.
+            </p>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <button onClick={() => void loadMemories()} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-medium text-white/80 transition-colors hover:bg-white/10 sm:w-auto">
-            <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Làm mới thư viện
-          </button>
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={openCreate} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-3 font-medium text-white shadow-lg shadow-orange-500/30 sm:w-auto">
-            <Plus className="h-5 w-5" />
-            Thêm kỷ niệm
-          </motion.button>
+            <div className="mt-7 grid gap-3 sm:grid-cols-3">
+              <div className="app-chip rounded-[24px] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Kho ảnh</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{memories.length}</p>
+                <p className="mt-2 text-sm text-white/55">Kỷ niệm đã được lưu vào atlas.</p>
+              </div>
+              <div className="app-chip rounded-[24px] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Yêu thích</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{totalLikes}</p>
+                <p className="mt-2 text-sm text-white/55">Lượt tim tích lũy cho các khoảnh khắc.</p>
+              </div>
+              <div className="app-chip rounded-[24px] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Điểm chạm</p>
+                <p className="mt-3 inline-flex items-center gap-2 text-lg font-semibold text-white">
+                  <Sparkles className="h-5 w-5 text-orange-200" />
+                  Chọn ảnh là lưu được
+                </p>
+                <p className="mt-2 text-sm text-white/55">Ít bước hơn để Cy không bị tụt cảm xúc.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            <div className="app-chip rounded-[28px] p-5">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/35">Quick actions</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <button onClick={() => void loadMemories()} className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/6 px-4 py-4 font-medium text-white/85 transition-colors hover:bg-white/10">
+                  <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  Làm mới thư viện
+                </button>
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={openCreate} className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 px-4 py-4 font-medium text-white shadow-lg shadow-orange-500/25">
+                  <Plus className="h-5 w-5" />
+                  Thêm kỷ niệm
+                </motion.button>
+              </div>
+            </div>
+
+            <div className="app-chip rounded-[28px] p-5">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/35">Cy note</p>
+              <p className="mt-3 text-xl font-semibold text-white">Mọi thứ đều xoay quanh ảnh.</p>
+              <p className="mt-3 text-sm leading-7 text-white/60">
+                Nếu bận, Cy có thể bỏ trống tiêu đề, ngày, mô tả. Chỉ cần ảnh là hệ thống sẽ tự đỡ phần còn lại.
+              </p>
+              <div className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white/80">
+                Ưu tiên cảm xúc trước biểu mẫu
+                <ArrowRight className="h-4 w-4" />
+              </div>
+            </div>
+          </div>
         </div>
-      </header>
+      </motion.section>
 
       {error ? <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
       {downloadError ? (
@@ -347,10 +404,18 @@ export default function Memories() {
           </motion.div>
 
           <div className="mt-12">
-            <h3 className="mb-8 flex items-center gap-2 text-2xl font-bold">
-              <ImageIcon className="h-6 w-6 text-orange-400" />
-              Dòng thời gian
-            </h3>
+            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-white/35">Timeline</p>
+                <h3 className="mt-3 flex items-center gap-2 text-2xl font-bold">
+                  <ImageIcon className="h-6 w-6 text-orange-400" />
+                  Dòng thời gian
+                </h3>
+              </div>
+              <div className="app-chip rounded-full px-4 py-2 text-sm text-white/70">
+                Vuốt, xem, đổi ảnh, hoặc tải về ngay
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {timeline.map((memory, index) => (
@@ -393,8 +458,9 @@ export default function Memories() {
                           <button
                             type="button"
                             onClick={() => void downloadMemoryImage(memory)}
-                            className="text-sm font-medium text-white/60 transition-colors hover:text-white"
+                            className="inline-flex items-center gap-2 text-sm font-medium text-white/60 transition-colors hover:text-white"
                           >
+                            <Download className="h-4 w-4" />
                             Tải ảnh
                           </button>
                           <button type="button" onClick={() => openEdit(memory)} className="text-sm font-medium text-white/60 transition-colors hover:text-white">
@@ -443,7 +509,7 @@ export default function Memories() {
         {isModalOpen ? (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm" onClick={closeModal} />
-            <motion.div initial={{ opacity: 0, y: '100%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: '100%' }} className="fixed bottom-0 left-0 right-0 z-[101] flex max-h-[90vh] flex-col rounded-t-3xl border border-white/10 bg-gray-900 shadow-2xl md:left-1/2 md:top-1/2 md:w-[720px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl">
+            <motion.div initial={{ opacity: 0, y: '100%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: '100%' }} className="fixed bottom-0 left-0 right-0 z-[101] flex max-h-[90vh] flex-col rounded-t-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,248,241,0.08),rgba(255,248,241,0.03)),rgba(9,18,31,0.96)] shadow-2xl md:left-1/2 md:top-1/2 md:w-[720px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl">
               <div className="flex items-center justify-between border-b border-white/10 px-4 py-4 sm:px-6">
                 <h2 className="text-2xl font-bold text-white">{editingMemory ? 'Chỉnh sửa kỷ niệm' : 'Thêm kỷ niệm mới'}</h2>
                 <button onClick={closeModal} className="rounded-full bg-white/5 p-2 text-white/50 hover:text-white">
@@ -508,7 +574,8 @@ export default function Memories() {
                 <textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder="Mô tả khoảnh khắc" rows={5} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-400 focus:outline-none" />
               </div>
 
-              <div className="sticky bottom-0 flex justify-end border-t border-white/10 bg-gray-900/95 px-4 py-4 backdrop-blur sm:px-6">
+              <div className="sticky bottom-0 flex items-center justify-between gap-4 border-t border-white/10 bg-[rgba(9,18,31,0.92)] px-4 py-4 backdrop-blur sm:px-6">
+                <p className="text-sm text-white/55">Chỉ cần có ảnh là có thể lưu ngay.</p>
                 <button onClick={() => void handleSubmit()} disabled={isSaving || isUploadingImage} className="rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-3 font-semibold text-white shadow-lg shadow-orange-500/30 disabled:opacity-60">
                   {isSaving ? 'Đang lưu...' : editingMemory ? 'Lưu thay đổi' : 'Lưu kỷ niệm'}
                 </button>

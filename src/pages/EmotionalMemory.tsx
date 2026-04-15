@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Archive, Heart, Loader2, Lock, Mail, Send, Sparkles } from 'lucide-react';
+import { Archive, ArrowRight, Heart, Loader2, Lock, Mail, Send, Sparkles, Stars } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import TiltCard from '../components/TiltCard';
 import { supabase } from '../lib/supabase';
@@ -157,27 +157,80 @@ export default function EmotionalMemory() {
 
   return (
     <div className="relative space-y-8 pb-24">
-      <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="mb-2 flex items-center gap-3 text-4xl font-bold tracking-tight">
-            Hũ bí ẩn tâm thư
-            <Mail className="h-8 w-8 text-rose-400" />
-          </h1>
-          <p className="text-lg text-white/60">
-            Mỗi lá thư được cất kín và chỉ mở ra đúng vào thời điểm bạn đã chọn.
-          </p>
-        </motion.div>
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,248,241,0.12),rgba(255,248,241,0.03)),radial-gradient(circle_at_top_right,rgba(242,95,122,0.18),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.16),transparent_28%),rgba(8,17,31,0.7)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] sm:p-8"
+      >
+        <div className="relative grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+          <div>
+            <div className="app-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-white/80">
+              <Stars className="h-4 w-4 text-rose-300" />
+              Capsule Vault
+            </div>
+            <h1 className="headline-serif mt-5 flex items-center gap-3 text-4xl font-semibold text-white sm:text-5xl">
+              Hũ bí ẩn tâm thư
+              <Mail className="h-8 w-8 text-rose-400" />
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-8 text-white/65 sm:text-lg">
+              Một nơi để cất lời yêu thương, bất ngờ, biết ơn hay xin lỗi, rồi để hệ thống
+              giữ kín cho đến đúng khoảnh khắc mà trái tim nên mở ra.
+            </p>
 
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setIsWriting(true)}
-          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-3 font-medium text-white shadow-lg shadow-rose-500/30"
-        >
-          <Send className="h-5 w-5" />
-          Viết thư mới
-        </motion.button>
-      </header>
+            <div className="mt-7 grid gap-3 sm:grid-cols-3">
+              <div className="app-chip rounded-[24px] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Đang giữ</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{notes.length}</p>
+                <p className="mt-2 text-sm text-white/55">Lá thư đang ở trong hũ.</p>
+              </div>
+              <div className="app-chip rounded-[24px] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Có thể mở</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{readyCount}</p>
+                <p className="mt-2 text-sm text-white/55">Những lời đã đến đúng thời điểm.</p>
+              </div>
+              <div className="app-chip rounded-[24px] px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.28em] text-white/35">Đang niêm phong</p>
+                <p className="mt-3 text-3xl font-semibold text-white">{lockedCount}</p>
+                <p className="mt-2 text-sm text-white/55">Những điều đẹp vẫn đang được bảo vệ.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            <div className="app-chip rounded-[28px] p-5">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/35">Write flow</p>
+              <p className="mt-3 text-2xl font-semibold text-white">Viết rồi thả vào hũ.</p>
+              <p className="mt-3 text-sm leading-7 text-white/60">
+                Chỉ vài bước để niêm phong một lá thư mới. Mọi thứ được giữ nguyên cảm xúc và
+                mở ra đúng ngày Cy muốn.
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setIsWriting(true)}
+                className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 px-5 py-3 font-medium text-white shadow-lg shadow-rose-500/25"
+              >
+                <Send className="h-4 w-4" />
+                Viết thư mới
+              </motion.button>
+            </div>
+
+            <div className="app-chip rounded-[28px] p-5">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/35">Vault note</p>
+              <p className="mt-3 text-sm leading-7 text-white/60">
+                Lá thư gần nhất sẽ mở vào{' '}
+                <span className="font-semibold text-white/85">
+                  {nextUnlock ? new Date(nextUnlock.unlock_date).toLocaleString('vi-VN') : 'chưa có lịch mở mới'}
+                </span>
+              </p>
+              <div className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white/80">
+                Dịu dàng, kín đáo, đúng thời điểm
+                <ArrowRight className="h-4 w-4" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.section>
 
       {error ? (
         <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
@@ -332,13 +385,15 @@ export default function EmotionalMemory() {
         {isWriting ? (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm" onClick={() => setIsWriting(false)} />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed left-1/2 top-1/2 z-[101] w-full max-w-xl -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/10 bg-gray-900 p-8 shadow-2xl">
-              <h2 className="mb-6 flex items-center gap-2 text-2xl font-bold">
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed left-1/2 top-1/2 z-[101] flex max-h-[90vh] w-full max-w-xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,248,241,0.08),rgba(255,248,241,0.03)),rgba(9,18,31,0.96)] shadow-2xl">
+              <div className="border-b border-white/10 px-8 py-6">
+              <h2 className="flex items-center gap-2 text-2xl font-bold">
                 <Heart className="h-6 w-6 text-rose-500" />
                 Niêm phong lá thư mới
               </h2>
+              </div>
 
-              <div className="space-y-4">
+              <div className="flex-1 space-y-4 overflow-y-auto px-8 py-6">
                 <textarea value={newContent} onChange={(event) => setNewContent(event.target.value)} placeholder="Viết điều bạn muốn cất trong hũ bí ẩn..." rows={6} className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-white placeholder:text-white/30 focus:border-rose-500 focus:outline-none" />
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -358,8 +413,10 @@ export default function EmotionalMemory() {
                     <input type="number" min="1" value={unlockDays} onChange={(event) => setUnlockDays(parseInt(event.target.value, 10) || 1)} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white focus:border-rose-500 focus:outline-none" />
                   </div>
                 </div>
-
-                <button type="button" onClick={() => void handleSave()} disabled={isSaving} className="w-full rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-4 font-semibold text-white shadow-lg shadow-rose-500/30 disabled:opacity-60">
+              </div>
+              <div className="flex items-center justify-between gap-4 border-t border-white/10 bg-[rgba(9,18,31,0.92)] px-8 py-5 backdrop-blur">
+                <p className="text-sm text-white/55">Lá thư sẽ được giữ kín cho đến ngày mở.</p>
+                <button type="button" onClick={() => void handleSave()} disabled={isSaving} className="rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-4 font-semibold text-white shadow-lg shadow-rose-500/30 disabled:opacity-60">
                   {isSaving ? 'Đang niêm phong...' : 'Niêm phong và thả thư vào hũ'}
                 </button>
               </div>
