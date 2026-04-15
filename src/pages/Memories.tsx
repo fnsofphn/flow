@@ -447,15 +447,15 @@ export default function Memories() {
         {isModalOpen ? (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm" onClick={closeModal} />
-            <motion.div initial={{ opacity: 0, y: '100%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: '100%' }} className="fixed bottom-0 left-0 right-0 z-[101] max-h-[90vh] overflow-y-auto rounded-t-3xl border border-white/10 bg-gray-900 p-4 shadow-2xl sm:p-6 md:left-1/2 md:top-1/2 md:w-[720px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl">
-              <div className="mb-6 flex items-center justify-between">
+            <motion.div initial={{ opacity: 0, y: '100%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: '100%' }} className="fixed bottom-0 left-0 right-0 z-[101] flex max-h-[90vh] flex-col rounded-t-3xl border border-white/10 bg-gray-900 shadow-2xl md:left-1/2 md:top-1/2 md:w-[720px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl">
+              <div className="flex items-center justify-between border-b border-white/10 px-4 py-4 sm:px-6">
                 <h2 className="text-2xl font-bold text-white">{editingMemory ? 'Chỉnh sửa kỷ niệm' : 'Thêm kỷ niệm mới'}</h2>
                 <button onClick={closeModal} className="rounded-full bg-white/5 p-2 text-white/50 hover:text-white">
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <div className="space-y-4">
+              <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
                 {error ? (
                   <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
                     {error}
@@ -512,7 +512,7 @@ export default function Memories() {
                 <textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder="Mô tả khoảnh khắc" rows={5} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-white/30 focus:border-pink-400 focus:outline-none" />
               </div>
 
-              <div className="mt-6 flex justify-end">
+              <div className="sticky bottom-0 flex justify-end border-t border-white/10 bg-gray-900/95 px-4 py-4 backdrop-blur sm:px-6">
                 <button onClick={() => void handleSubmit()} disabled={isSaving || isUploadingImage} className="rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-3 font-semibold text-white shadow-lg shadow-orange-500/30 disabled:opacity-60">
                   {isSaving ? 'Đang lưu...' : editingMemory ? 'Lưu thay đổi' : 'Lưu kỷ niệm'}
                 </button>
