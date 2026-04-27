@@ -10,6 +10,7 @@ import {
   Mail,
   Sparkles,
   Stars,
+  Target,
   Wallet,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -42,6 +43,13 @@ const quickDestinations = [
     icon: CheckCircle2,
     path: '/todo',
     accent: 'from-sky-500/20 to-cyan-500/20',
+  },
+  {
+    title: 'Mục tiêu 2026',
+    description: 'Xem dashboard kế hoạch năm: sức khoẻ, gắn kết, tài chính và phát triển.',
+    icon: Target,
+    path: '/goals-2026',
+    accent: 'from-violet-500/20 to-sky-500/20',
   },
   {
     title: 'Tài chính chung',

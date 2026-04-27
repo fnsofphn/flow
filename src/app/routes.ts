@@ -11,6 +11,7 @@ import {
   Music,
   Moon,
   Plane,
+  Target,
   TrendingUp,
   Wallet,
 } from 'lucide-react';
@@ -37,6 +38,13 @@ export const appRoutes: AppRoute[] = [
     icon: Wallet,
     nav: true,
     component: lazy(() => import('@/pages/Finance')),
+  },
+  {
+    path: '/goals-2026',
+    label: 'Mục tiêu 2026',
+    icon: Target,
+    nav: true,
+    component: lazy(() => import('@/pages/Goals2026')),
   },
   {
     path: '/memories',
