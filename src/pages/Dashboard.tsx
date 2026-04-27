@@ -125,16 +125,12 @@ export default function Dashboard() {
               <Stars className="h-4 w-4 text-orange-300" />
               Hệ điều hành yêu thương cho Cy
             </div>
-            <h1 className="headline-serif mt-5 max-w-3xl text-4xl font-semibold leading-tight text-white sm:text-5xl xl:text-6xl">
+            <h1 className="headline-serif mt-5 max-w-4xl text-3xl font-semibold leading-tight text-white sm:text-4xl xl:text-5xl">
               Mọi điều Cy cần,
               <span className="bg-gradient-to-r from-[#f6c18b] via-[#f49a62] to-[#f25f7a] bg-clip-text text-transparent">
                 {' '}đều ở đúng chỗ và đúng cảm xúc.
               </span>
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-white/68 sm:text-lg">
-              NamCy giờ không chỉ là nơi cất dữ liệu, mà là một không gian dịu mắt, dễ chạm,
-              và đủ tinh tế để Cy muốn mở lên mỗi ngày.
-            </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               <div className="app-chip rounded-[24px] px-4 py-4">
