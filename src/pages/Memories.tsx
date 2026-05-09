@@ -30,6 +30,9 @@ type Memory = {
 };
 
 const MEMORIES_BUCKET = 'memories-images';
+const MAX_IMAGE_EDGE = 1600;
+const JPEG_UPLOAD_QUALITY = 0.82;
+const MAX_INLINE_IMAGE_LENGTH = 3_500_000;
 
 const emptyForm = {
   title: '',
@@ -48,6 +51,93 @@ const sanitizeFileName = (value: string) =>
     .toLowerCase() || 'ky-niem';
 
 const getTodayDate = () => new Date().toISOString().slice(0, 10);
+
+const readBlobAsDataUrl = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error('Không thể đọc tệp ảnh.'));
+    reader.readAsDataURL(blob);
+  });
+
+const loadImage = (src: string) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Không thể xử lý ảnh này.'));
+    image.src = src;
+  });
+
+const canvasToJpegBlob = (canvas: HTMLCanvasElement) =>
+  new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Không thể nén ảnh.'));
+        }
+      },
+      'image/jpeg',
+      JPEG_UPLOAD_QUALITY,
+    );
+  });
+
+const prepareImageForUpload = async (file: File) => {
+  const originalDataUrl = await readBlobAsDataUrl(file);
+
+  if (file.type === 'image/gif' || file.type === 'image/svg+xml') {
+    return {
+      blob: file,
+      contentType: file.type,
+      extension: file.type === 'image/gif' ? 'gif' : 'svg',
+      inlineDataUrl: originalDataUrl,
+    };
+  }
+
+  try {
+    const image = await loadImage(originalDataUrl);
+    const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(image.naturalWidth, image.naturalHeight));
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+      throw new Error('Trình duyệt không hỗ trợ xử lý ảnh.');
+    }
+
+    context.drawImage(image, 0, 0, width, height);
+    const blob = await canvasToJpegBlob(canvas);
+
+    return {
+      blob,
+      contentType: 'image/jpeg',
+      extension: 'jpg',
+      inlineDataUrl: await readBlobAsDataUrl(blob),
+    };
+  } catch {
+    const fallbackExtension = file.type.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+    return {
+      blob: file,
+      contentType: file.type || 'image/jpeg',
+      extension: fallbackExtension,
+      inlineDataUrl: originalDataUrl,
+    };
+  }
+};
+
+const getUploadIssueMessage = (issue: unknown) => {
+  const message = issue instanceof Error ? issue.message : String(issue || '');
+
+  if (/load failed|failed to fetch|network/i.test(message)) {
+    return 'không kết nối được Supabase Storage từ trình duyệt';
+  }
+
+  return message || 'không thể tải ảnh lên Supabase Storage';
+};
 
 const triggerBrowserDownload = (url: string, filename: string) => {
   const link = document.createElement('a');
@@ -68,6 +158,7 @@ export default function Memories() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
   const [uploadLabel, setUploadLabel] = useState('Chưa chọn ảnh từ máy');
@@ -84,6 +175,7 @@ export default function Memories() {
     setForm(emptyForm);
     setEditingMemory(null);
     setUploadLabel('Chưa chọn ảnh từ máy');
+    setUploadNotice(null);
     setIsUploadingImage(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -147,13 +239,20 @@ export default function Memories() {
     }
 
     setError(null);
+    setUploadNotice(null);
     setUploadLabel(file.name);
     setIsUploadingImage(true);
 
     try {
-      const publicUrl = await uploadMemoryImage(file);
-      setForm((current) => ({ ...current, imageUrl: publicUrl }));
-      setUploadLabel(`${file.name} - đã tải lên`);
+      const uploadResult = await uploadMemoryImage(file);
+      setForm((current) => ({ ...current, imageUrl: uploadResult.imageUrl }));
+      setUploadLabel(`${file.name} - ${uploadResult.storedInSupabase ? 'đã tải lên' : 'đã chọn'}`);
+
+      if (!uploadResult.storedInSupabase) {
+        setUploadNotice(
+          `Không tải được lên Supabase Storage (${uploadResult.issueMessage}). Ảnh đã được nén và vẫn có thể lưu trực tiếp.`,
+        );
+      }
     } catch (uploadIssue) {
       const message =
         uploadIssue instanceof Error ? uploadIssue.message : 'Không thể tải ảnh lên lúc này.';
@@ -165,22 +264,37 @@ export default function Memories() {
   };
 
   const uploadMemoryImage = async (file: File) => {
-    const extension = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+    const preparedImage = await prepareImageForUpload(file);
     const safeName = sanitizeFileName(file.name.replace(/\.[^.]+$/, ''));
-    const filePath = `${Date.now()}-${safeName}.${extension}`;
+    const uniqueId = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const filePath = `${uniqueId}-${safeName}.${preparedImage.extension}`;
 
-    const { error: uploadError } = await supabase.storage.from(MEMORIES_BUCKET).upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: false,
-      contentType: file.type || undefined,
-    });
+    try {
+      const { error: uploadError } = await supabase.storage.from(MEMORIES_BUCKET).upload(filePath, preparedImage.blob, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: preparedImage.contentType,
+      });
 
-    if (uploadError) {
-      throw uploadError;
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage.from(MEMORIES_BUCKET).getPublicUrl(filePath);
+      return { imageUrl: data.publicUrl, storedInSupabase: true, issueMessage: null };
+    } catch (uploadIssue) {
+      if (preparedImage.inlineDataUrl.length <= MAX_INLINE_IMAGE_LENGTH) {
+        return {
+          imageUrl: preparedImage.inlineDataUrl,
+          storedInSupabase: false,
+          issueMessage: getUploadIssueMessage(uploadIssue),
+        };
+      }
+
+      throw new Error(
+        `${getUploadIssueMessage(uploadIssue)}. Ảnh sau khi nén vẫn quá lớn, hãy thử chọn ảnh nhỏ hơn.`,
+      );
     }
-
-    const { data } = supabase.storage.from(MEMORIES_BUCKET).getPublicUrl(filePath);
-    return data.publicUrl;
   };
 
   const handleSubmit = async () => {
@@ -365,6 +479,11 @@ export default function Memories() {
       </motion.section>
 
       {error ? <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">{error}</div> : null}
+      {uploadNotice ? (
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
+          {uploadNotice}
+        </div>
+      ) : null}
       {downloadError ? (
         <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
           {downloadError}
@@ -521,6 +640,11 @@ export default function Memories() {
                 {error ? (
                   <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
                     {error}
+                  </div>
+                ) : null}
+                {uploadNotice ? (
+                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
+                    {uploadNotice}
                   </div>
                 ) : null}
 
