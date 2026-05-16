@@ -13,6 +13,7 @@ import {
   Plane,
   Target,
   TrendingUp,
+  Utensils,
   Wallet,
 } from 'lucide-react';
 
@@ -73,6 +74,13 @@ export const appRoutes: AppRoute[] = [
     icon: CalendarHeart,
     nav: true,
     component: lazy(() => import('@/pages/DatePlanner')),
+  },
+  {
+    path: '/cy-meals',
+    label: 'Món Cy nấu',
+    icon: Utensils,
+    nav: true,
+    component: lazy(() => import('@/pages/CyMeals')),
   },
   {
     path: '/trading',
